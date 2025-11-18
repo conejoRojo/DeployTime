@@ -1,0 +1,63 @@
+services:
+  mysql:
+    image: mysql:8.0
+    container_name: deploytime_mysql
+    restart: unless-stopped
+    environment:
+      MYSQL_ROOT_PASSWORD: root
+      MYSQL_DATABASE: deploytime
+      MYSQL_USER: deploytime_user
+      MYSQL_PASSWORD: deploytime_pass
+    ports:
+      - "3308:3306"
+    volumes:
+      - mysql_data:/var/lib/mysql
+      - ./docker/mysql/my.cnf:/etc/mysql/conf.d/my.cnf
+    networks:
+      - deploytime_network
+
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile.dev
+    container_name: deploytime_app
+    restart: unless-stopped
+    working_dir: /var/www
+    volumes:
+      - ./:/var/www
+    ports:
+      - "8000:8000"
+    depends_on:
+      - mysql
+    networks:
+      - deploytime_network
+    environment:
+      DB_HOST: mysql
+      DB_PORT: 3306
+      DB_DATABASE: deploytime
+      DB_USERNAME: deploytime_user
+      DB_PASSWORD: deploytime_pass
+
+  phpmyadmin:
+    image: phpmyadmin:latest
+    container_name: deploytime_phpmyadmin
+    restart: unless-stopped
+    environment:
+      PMA_HOST: mysql
+      PMA_PORT: 3306
+      PMA_USER: root
+      PMA_PASSWORD: root
+    ports:
+      - "8081:80"
+    depends_on:
+      - mysql
+    networks:
+      - deploytime_network
+
+volumes:
+  mysql_data:
+    driver: local
+
+networks:
+  deploytime_network:
+    driver: bridge

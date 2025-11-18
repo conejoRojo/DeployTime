@@ -1,0 +1,227 @@
+# DeployTime - Inicio Rápido
+
+Guía para iniciar el proyecto en 5 minutos.
+
+---
+
+## Pre-requisitos
+
+- Docker Desktop instalado y corriendo
+- Node.js 18+ instalado
+- Git (opcional)
+
+---
+
+## Inicio en 3 Pasos
+
+### 1️⃣ Iniciar Backend
+
+```bash
+cd backend
+docker-compose up -d
+```
+
+**Resultado**:
+- MySQL corriendo en puerto 3308
+- phpMyAdmin en http://localhost:8081
+- Laravel API en http://localhost:8000
+
+### 2️⃣ Verificar Backend
+
+```bash
+# Ejecutar migraciones (si es primera vez)
+docker-compose exec app php artisan migrate --seed
+
+# Probar API
+curl http://localhost:8000/api/auth/login \
+  -H "Content-Type: application/json" \
+  -d '{"email":"juan@deploytime.com","password":"colaborador123"}'
+```
+
+**Resultado**: Debe devolver un JWT token
+
+### 3️⃣ Iniciar Desktop App
+
+```bash
+cd desktop
+npm install   # Solo primera vez
+npm run dev
+```
+
+**Resultado**:
+- Vite dev server en http://localhost:3000
+- Electron app se abre en system tray
+
+---
+
+## 🔑 Usuarios de Prueba
+
+| Email | Password | Rol |
+|-------|----------|-----|
+| `admin@deploytime.com` | `admin123` | Admin |
+| `juan@deploytime.com` | `colaborador123` | Colaborador |
+| `maria@deploytime.com` | `colaborador123` | Colaborador |
+
+---
+
+## ✨ Flujo de Uso
+
+### Paso 1: Login
+1. Abrir la app desde el system tray
+2. Ingresar: `juan@deploytime.com` / `colaborador123`
+3. Click "Iniciar Sesión"
+
+### Paso 2: Seleccionar Proyecto y Tarea
+1. Dropdown "Proyecto" → Seleccionar "Sistema Web de Gestión"
+2. Dropdown "Tarea" → Seleccionar "Desarrollo API REST"
+
+### Paso 3: Iniciar Timer
+1. Click "Iniciar Timer"
+2. El timer comenzará a contar en pantalla
+
+### Paso 4: Trabajar
+- El timer cuenta automáticamente
+- Puedes cerrar la ventana, el timer sigue corriendo
+- Click en el icono del tray para abrir de nuevo
+
+### Paso 5: Detener Timer
+1. Click "Detener Timer"
+2. El tiempo se guarda en el backend
+3. Puedes seleccionar otra tarea
+
+---
+
+## 📊 Datos de Prueba Incluidos
+
+- **2 Proyectos**:
+  - Sistema Web de Gestión
+  - App Móvil E-commerce
+
+- **4 Tareas**:
+  - Diseño de base de datos (completada)
+  - Desarrollo API REST (en progreso)
+  - Frontend React (pendiente)
+  - Configuración inicial Flutter (completada)
+
+- **5 Time Entries**:
+  - Varios registros de tiempo completados
+  - 1 timer activo (Juan en "Desarrollo API REST")
+
+---
+
+## 🐛 Troubleshooting
+
+### Backend no inicia
+```bash
+# Verificar que Docker esté corriendo
+docker ps
+
+# Ver logs
+cd backend
+docker-compose logs -f app
+```
+
+### Desktop no inicia
+```bash
+# Verificar que backend esté corriendo
+curl http://localhost:8000/api/projects
+
+# Limpiar y reinstalar
+cd desktop
+rm -rf node_modules
+npm install
+npm run dev
+```
+
+### Error "Connection refused"
+- Verificar que el backend esté corriendo: `docker-compose ps`
+- Verificar que MySQL esté en puerto 3308: `docker ps | grep 3308`
+
+### Error "JWT Token invalid"
+- Logout y volver a hacer login
+- Verificar que `JWT_SECRET` esté en backend/.env
+
+---
+
+## 📁 URLs Importantes
+
+| Servicio | URL | Credenciales |
+|----------|-----|--------------|
+| API Backend | http://localhost:8000/api | - |
+| phpMyAdmin | http://localhost:8081 | root / root |
+| MySQL | localhost:3308 | deploytime_user / deploytime_pass |
+
+---
+
+## 🧪 Testing Rápido
+
+### Test de Backend
+```bash
+# Login
+curl -X POST http://localhost:8000/api/auth/login \
+  -H "Content-Type: application/json" \
+  -d '{"email":"juan@deploytime.com","password":"colaborador123"}'
+
+# Copiar el access_token de la respuesta
+export TOKEN="eyJ0eXAi..."
+
+# Listar proyectos
+curl http://localhost:8000/api/projects \
+  -H "Authorization: Bearer $TOKEN"
+```
+
+### Test de Desktop
+1. Abrir app
+2. Login con juan@deploytime.com
+3. Seleccionar proyecto y tarea
+4. Iniciar timer
+5. Esperar 10 segundos
+6. Detener timer
+7. Verificar en backend que se guardó:
+   ```bash
+   curl http://localhost:8000/api/my/time-entries \
+     -H "Authorization: Bearer $TOKEN"
+   ```
+
+---
+
+## 📖 Documentación Completa
+
+- [README Principal](README.md) - Visión general del proyecto
+- [Backend Completado](docs/BACKEND_COMPLETADO.md) - Detalles del backend
+- [Integración Completada](docs/INTEGRACION_COMPLETADA.md) - Integración Backend + Desktop
+- [Resumen Final](docs/RESUMEN_FINAL.md) - Resumen ejecutivo completo
+
+---
+
+## Siguiente Paso
+
+Una vez que todo esté funcionando:
+
+1. **Desarrollo**: Modificar código y ver cambios en hot reload
+2. **Testing**: Probar todos los flujos (login, timer, sync, inactivity)
+3. **Build**: `npm run package:win` para crear instalador Windows
+4. **Deploy**: Subir backend a servidor Debian (Toran)
+
+---
+
+## Checklist de Verificación
+
+- [ ] Docker Desktop corriendo
+- [ ] `docker-compose up -d` ejecutado
+- [ ] Backend respondiendo en :8000
+- [ ] phpMyAdmin accesible en :8081
+- [ ] `npm install` ejecutado en desktop/
+- [ ] `npm run dev` corriendo
+- [ ] Electron app visible en system tray
+- [ ] Login exitoso con juan@deploytime.com
+- [ ] Proyectos cargados desde backend
+- [ ] Timer funcionando correctamente
+
+---
+
+**¡Listo!** 🎉
+
+El sistema DeployTime está corriendo y listo para usar.
+
+Para más información, consulta la [documentación completa](README.md).

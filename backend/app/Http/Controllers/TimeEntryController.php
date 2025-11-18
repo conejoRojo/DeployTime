@@ -1,0 +1,194 @@
+<?php
+
+namespace App\Http\Controllers;
+
+use App\Models\TimeEntry;
+use App\Models\Task;
+use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Validator;
+
+class TimeEntryController extends Controller
+{
+    /**
+     * Get all time entries for a task.
+     */
+    public function index($taskId)
+    {
+        $user = auth()->user();
+        $task = Task::with('project')->find($taskId);
+
+        if (!$task) {
+            return response()->json(['error' => 'Tarea no encontrada'], 404);
+        }
+
+        // Verificar acceso al proyecto
+        if (!$user->isAdmin() && !$task->project->collaborators->contains($user->id)) {
+            return response()->json(['error' => 'No tienes acceso a esta tarea'], 403);
+        }
+
+        $entries = TimeEntry::where('task_id', $taskId)
+            ->with(['user', 'task'])
+            ->orderBy('start_time', 'desc')
+            ->get();
+
+        return response()->json($entries);
+    }
+
+    /**
+     * Get a specific time entry.
+     */
+    public function show($id)
+    {
+        $user = auth()->user();
+        $entry = TimeEntry::with(['task.project', 'user'])->find($id);
+
+        if (!$entry) {
+            return response()->json(['error' => 'Registro de tiempo no encontrado'], 404);
+        }
+
+        // Verificar acceso
+        if (!$user->isAdmin() && $entry->user_id !== $user->id) {
+            return response()->json(['error' => 'No tienes acceso a este registro'], 403);
+        }
+
+        return response()->json($entry);
+    }
+
+    /**
+     * Start a new time entry.
+     */
+    public function start(Request $request)
+    {
+        $validator = Validator::make($request->all(), [
+            'task_id' => 'required|exists:tasks,id',
+            'notes' => 'nullable|string',
+        ]);
+
+        if ($validator->fails()) {
+            return response()->json($validator->errors(), 422);
+        }
+
+        $user = auth()->user();
+        $task = Task::with('project')->find($request->task_id);
+
+        // Verificar acceso al proyecto
+        if (!$user->isAdmin() && !$task->project->collaborators->contains($user->id)) {
+            return response()->json(['error' => 'No tienes acceso a este proyecto'], 403);
+        }
+
+        // Verificar si hay una entrada de tiempo activa
+        $activeEntry = TimeEntry::where('user_id', $user->id)
+            ->whereNull('end_time')
+            ->first();
+
+        if ($activeEntry) {
+            return response()->json([
+                'error' => 'Ya tienes una entrada de tiempo activa. Debes detenerla primero.',
+                'active_entry' => $activeEntry
+            ], 400);
+        }
+
+        $entry = TimeEntry::create([
+            'task_id' => $request->task_id,
+            'user_id' => $user->id,
+            'start_time' => now(),
+            'notes' => $request->notes,
+        ]);
+
+        return response()->json($entry->load(['task', 'user']), 201);
+    }
+
+    /**
+     * Stop a time entry.
+     */
+    public function stop(Request $request, $id)
+    {
+        $user = auth()->user();
+        $entry = TimeEntry::find($id);
+
+        if (!$entry) {
+            return response()->json(['error' => 'Registro de tiempo no encontrado'], 404);
+        }
+
+        // Solo el dueño puede detener su entrada
+        if ($entry->user_id !== $user->id) {
+            return response()->json(['error' => 'No puedes detener la entrada de tiempo de otro usuario'], 403);
+        }
+
+        if ($entry->end_time) {
+            return response()->json(['error' => 'Esta entrada de tiempo ya fue detenida'], 400);
+        }
+
+        $entry->update([
+            'end_time' => now(),
+            'notes' => $request->notes ?? $entry->notes,
+        ]);
+
+        return response()->json($entry->load(['task', 'user']));
+    }
+
+    /**
+     * Delete a time entry.
+     */
+    public function destroy($id)
+    {
+        $user = auth()->user();
+        $entry = TimeEntry::find($id);
+
+        if (!$entry) {
+            return response()->json(['error' => 'Registro de tiempo no encontrado'], 404);
+        }
+
+        // Solo el dueño o admin pueden eliminar
+        if (!$user->isAdmin() && $entry->user_id !== $user->id) {
+            return response()->json(['error' => 'No tienes permiso para eliminar este registro'], 403);
+        }
+
+        $entry->delete();
+
+        return response()->json(['message' => 'Registro de tiempo eliminado correctamente']);
+    }
+
+    /**
+     * Get the active time entry for the authenticated user.
+     */
+    public function getActive()
+    {
+        $user = auth()->user();
+        $activeEntry = TimeEntry::where('user_id', $user->id)
+            ->whereNull('end_time')
+            ->with(['task.project', 'user'])
+            ->first();
+
+        if (!$activeEntry) {
+            return response()->json(['active_entry' => null]);
+        }
+
+        return response()->json($activeEntry);
+    }
+
+    /**
+     * Get all time entries for the authenticated user.
+     */
+    public function myEntries(Request $request)
+    {
+        $user = auth()->user();
+
+        $query = TimeEntry::where('user_id', $user->id)
+            ->with(['task.project', 'user'])
+            ->orderBy('start_time', 'desc');
+
+        // Filtro opcional por fecha
+        if ($request->has('from_date')) {
+            $query->where('start_time', '>=', $request->from_date);
+        }
+
+        if ($request->has('to_date')) {
+            $query->where('start_time', '<=', $request->to_date);
+        }
+
+        $entries = $query->get();
+
+        return response()->json($entries);
+    }
+}

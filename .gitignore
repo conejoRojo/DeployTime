@@ -1,0 +1,35 @@
+# Backend (Laravel)
+backend/vendor/
+backend/.env
+backend/storage/*.key
+backend/storage/logs/
+backend/storage/framework/cache/
+backend/storage/framework/sessions/
+backend/storage/framework/testing/
+backend/storage/framework/views/
+backend/bootstrap/cache/
+backend/node_modules/
+
+# Desktop (Electron)
+desktop/node_modules/
+desktop/dist/
+desktop/out/
+desktop/.env.local
+desktop/*.sqlite
+desktop/*.db
+
+# OS
+.DS_Store
+Thumbs.db
+*.log
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# Temp
+*.tmp
+*.temp

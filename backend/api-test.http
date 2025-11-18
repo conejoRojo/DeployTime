@@ -1,0 +1,237 @@
+### DeployTime API Testing
+### Instala la extensión "REST Client" en VSCode para usar este archivo
+### Haz clic en "Send Request" encima de cada petición
+
+@baseUrl = http://localhost:8000/api
+@token =
+
+### ===========================================
+### 1. AUTENTICACIÓN
+### ===========================================
+
+### Login como Admin
+# @name loginAdmin
+POST {{baseUrl}}/auth/login
+Content-Type: application/json
+
+{
+  "email": "admin@deploytime.com",
+  "password": "admin123"
+}
+
+### Login como Colaborador (Juan)
+# @name loginJuan
+POST {{baseUrl}}/auth/login
+Content-Type: application/json
+
+{
+  "email": "juan@deploytime.com",
+  "password": "colaborador123"
+}
+
+### Login como Colaborador (María)
+# @name loginMaria
+POST {{baseUrl}}/auth/login
+Content-Type: application/json
+
+{
+  "email": "maria@deploytime.com",
+  "password": "colaborador123"
+}
+
+### Obtener usuario autenticado
+# Primero ejecuta un login, luego copia el token y pégalo en @token arriba
+GET {{baseUrl}}/auth/me
+Authorization: Bearer {{token}}
+
+### Refrescar token
+POST {{baseUrl}}/auth/refresh
+Authorization: Bearer {{token}}
+
+### Logout
+POST {{baseUrl}}/auth/logout
+Authorization: Bearer {{token}}
+
+### ===========================================
+### 2. PROYECTOS
+### ===========================================
+
+### Listar todos los proyectos
+GET {{baseUrl}}/projects
+Authorization: Bearer {{token}}
+
+### Ver proyecto específico
+GET {{baseUrl}}/projects/1
+Authorization: Bearer {{token}}
+
+### Crear proyecto (solo admin)
+POST {{baseUrl}}/projects
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "name": "Nuevo Proyecto API Test",
+  "description": "Proyecto creado desde REST Client"
+}
+
+### Actualizar proyecto (solo admin)
+PUT {{baseUrl}}/projects/1
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "name": "Proyecto Actualizado",
+  "description": "Descripción actualizada"
+}
+
+### Agregar colaborador a proyecto (solo admin)
+POST {{baseUrl}}/projects/1/collaborators
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "user_id": 3
+}
+
+### Remover colaborador de proyecto (solo admin)
+DELETE {{baseUrl}}/projects/1/collaborators/3
+Authorization: Bearer {{token}}
+
+### Eliminar proyecto (solo admin)
+DELETE {{baseUrl}}/projects/3
+Authorization: Bearer {{token}}
+
+### ===========================================
+### 3. TAREAS
+### ===========================================
+
+### Listar tareas de un proyecto
+GET {{baseUrl}}/projects/1/tasks
+Authorization: Bearer {{token}}
+
+### Ver tarea específica
+GET {{baseUrl}}/tasks/1
+Authorization: Bearer {{token}}
+
+### Crear tarea
+POST {{baseUrl}}/tasks
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "project_id": 1,
+  "name": "Tarea de prueba desde REST Client",
+  "description": "Descripción de la tarea de prueba",
+  "estimated_hours": 5.5,
+  "status": "pending"
+}
+
+### Actualizar tarea
+PUT {{baseUrl}}/tasks/2
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "name": "Tarea actualizada",
+  "status": "in_progress",
+  "estimated_hours": 12.0
+}
+
+### Eliminar tarea
+DELETE {{baseUrl}}/tasks/5
+Authorization: Bearer {{token}}
+
+### ===========================================
+### 4. REGISTROS DE TIEMPO
+### ===========================================
+
+### Ver registro activo del usuario
+GET {{baseUrl}}/my/active-time-entry
+Authorization: Bearer {{token}}
+
+### Listar todos mis registros de tiempo
+GET {{baseUrl}}/my/time-entries
+Authorization: Bearer {{token}}
+
+### Listar mis registros con filtro de fecha
+GET {{baseUrl}}/my/time-entries?from_date=2025-11-10&to_date=2025-11-20
+Authorization: Bearer {{token}}
+
+### Listar registros de una tarea
+GET {{baseUrl}}/tasks/2/time-entries
+Authorization: Bearer {{token}}
+
+### Ver registro específico
+GET {{baseUrl}}/time-entries/1
+Authorization: Bearer {{token}}
+
+### Iniciar nuevo registro de tiempo
+POST {{baseUrl}}/time-entries
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "task_id": 3,
+  "notes": "Comenzando trabajo en frontend React"
+}
+
+### Detener registro de tiempo
+PUT {{baseUrl}}/time-entries/4/stop
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "notes": "Trabajo completado por hoy"
+}
+
+### Eliminar registro de tiempo
+DELETE {{baseUrl}}/time-entries/6
+Authorization: Bearer {{token}}
+
+### ===========================================
+### FLUJO COMPLETO DE EJEMPLO
+### ===========================================
+
+### 1. Login
+# @name login
+POST {{baseUrl}}/auth/login
+Content-Type: application/json
+
+{
+  "email": "juan@deploytime.com",
+  "password": "colaborador123"
+}
+
+### 2. Guardar token (ejecuta primero el login de arriba)
+@authToken = {{login.response.body.access_token}}
+
+### 3. Ver mis proyectos
+GET {{baseUrl}}/projects
+Authorization: Bearer {{authToken}}
+
+### 4. Ver mi tiempo activo
+GET {{baseUrl}}/my/active-time-entry
+Authorization: Bearer {{authToken}}
+
+### 5. Detener tiempo activo (si existe - reemplaza el ID)
+PUT {{baseUrl}}/time-entries/4/stop
+Authorization: Bearer {{authToken}}
+Content-Type: application/json
+
+{
+  "notes": "Finalizando sesión de trabajo"
+}
+
+### 6. Iniciar nuevo tiempo
+POST {{baseUrl}}/time-entries
+Authorization: Bearer {{authToken}}
+Content-Type: application/json
+
+{
+  "task_id": 2,
+  "notes": "Retomando desarrollo de API"
+}
+
+### 7. Ver mis tiempos de hoy
+GET {{baseUrl}}/my/time-entries
+Authorization: Bearer {{authToken}}
