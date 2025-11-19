@@ -297,7 +297,7 @@ npm run dev
 
 ### Backend (Producción)
 ```bash
-# En servidor Debian (Toran)
+# En servidor Debian
 git clone <repo>
 cd backend
 composer install --optimize-autoloader --no-dev
