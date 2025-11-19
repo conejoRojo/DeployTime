@@ -21,11 +21,12 @@ function createWindow() {
     x: screenWidth - windowWidth - margin,
     y: margin,
     show: false,
-    frame: true, // Cambiado a true para que tenga barra de título y se pueda mover
+    frame: false, // Cambiado a true para que tenga barra de título y se pueda mover
     fullscreenable: false,
     resizable: false,
     transparent: false,
     alwaysOnTop: true, // Siempre visible encima de otras ventanas
+    autoHideMenuBar: true,
     webPreferences: {
       nodeIntegration: false,
       contextIsolation: true,

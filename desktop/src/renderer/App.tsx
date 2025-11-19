@@ -18,17 +18,26 @@ function App() {
   const [user, setUser] = useState<User | null>(null);
   const [activeTimer, setActiveTimer] = useState<TimeEntry | null>(null);
   const [projects, setProjects] = useState<Project[]>([]);
+  const [newProjectName, setNewProjectName] = useState('');
+  const [newProjectDescription, setNewProjectDescription] = useState('');
   const [tasks, setTasks] = useState<Task[]>([]);
+  const [newTaskName, setNewTaskName] = useState('');
+  const [newTaskDescription, setNewTaskDescription] = useState('');
+  const [newTaskEstimatedHours, setNewTaskEstimatedHours] = useState<number | undefined>(undefined);
   const [selectedProject, setSelectedProject] = useState<number | null>(null);
   const [selectedTask, setSelectedTask] = useState<number | null>(null);
   const [elapsedTime, setElapsedTime] = useState('00:00:00');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [accumulatedTime, setAccumulatedTime] = useState(0); // Tiempo total acumulado (todas las sesiones previas)
-
+  // Configuración
+  const [showSettings, setShowSettings] = useState(false);
   // Email y password para el formulario
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const isPaused = !activeTimer && selectedTask !== null && accumulatedTime > 0;
+
+  const currentTask = (activeTimer?.task as Task | undefined) || tasks.find((t) => t.id === (activeTimer?.task_id || selectedTask));
 
     // Timer update - tiempo acumulado (todas las sesiones previas) + sesión actual
   useEffect(() => { // Declara un efecto que se ejecuta cuando cambia el timer activo o el tiempo acumulado
@@ -190,6 +199,67 @@ function App() {
     }
   };
 
+  const handleCreateProject = async () => { // Maneja la creación de un proyecto nuevo
+  if (!newProjectName.trim()) { // Si el nombre está vacío
+    alert('El nombre del proyecto es obligatorio'); // Muestra alerta al usuario
+    return; // Sale de la función sin intentar crear el proyecto
+  }
+
+  setLoading(true); // Activa el estado de carga
+  setError(null); // Limpia errores previos
+
+  try { // Bloque try/catch para manejar errores
+    const project = await api.createProject({
+      name: newProjectName, // Usa el nombre ingresado
+      description: newProjectDescription || '' // Usa la descripción o cadena vacía
+    }); // Llama a la API para crear el proyecto
+
+    setProjects([...projects, project]); // Agrega el nuevo proyecto a la lista de proyectos en estado
+    setNewProjectName(''); // Limpia el nombre ingresado
+    setNewProjectDescription(''); // Limpia la descripción ingresada
+    setSelectedProject(project.id); // Selecciona automáticamente el proyecto recién creado
+    await handleProjectChange(project.id); // Carga las tareas del nuevo proyecto
+  } catch (err: any) { // Captura errores de la API
+    console.error('Error al crear proyecto:', err); // Loguea el error en consola
+    setError(err.response?.data?.error || 'Error al crear proyecto'); // Muestra mensaje descriptivo en la UI
+  } finally { // Bloque que siempre se ejecuta
+    setLoading(false); // Quita el estado de carga
+  } // Fin del finally
+}; // Fin de handleCreateProject
+
+const handleCreateTask = async () => { // Maneja la creación de una tarea dentro de un proyecto
+  if (!selectedProject) { // Si no hay proyecto seleccionado
+    alert('Seleccioná un proyecto primero'); // Muestra alerta al usuario
+    return; // Sale de la función
+  }
+  if (!newTaskName.trim()) { // Si el nombre de la tarea está vacío
+    alert('El nombre de la tarea es obligatorio'); // Alerta informativa
+    return; // Sale de la función
+  }
+
+  setLoading(true); // Activa estado de carga
+  setError(null); // Limpia errores previos
+
+  try { // Bloque try/catch para manejar errores de API
+    const task = await api.createTask({
+      project_id: selectedProject, // Asigna la tarea al proyecto seleccionado
+      name: newTaskName, // Usa el nombre ingresado
+      description: newTaskDescription || '', // Usa la descripción o cadena vacía
+      estimated_hours: newTaskEstimatedHours // Asigna horas estimadas si existen
+    }); // Llama a la API para crear la tarea
+
+    setTasks([...tasks, task]); // Agrega la nueva tarea al estado
+    setNewTaskName(''); // Limpia el campo nombre
+    setNewTaskDescription(''); // Limpia el campo descripción
+    setNewTaskEstimatedHours(undefined); // Limpia las horas estimadas
+  } catch (err: any) { // Captura errores de la API
+    console.error('Error al crear tarea:', err); // Loguea el error
+    setError(err.response?.data?.error || 'Error al crear tarea'); // Muestra mensaje descriptivo al usuario
+  } finally { // Bloque que siempre se ejecuta
+    setLoading(false); // Quita estado de carga
+  } // Fin del finally
+}; // Fin de handleCreateTask
+
   // Iniciar timer
   const handleStartTimer = async () => {
     if (!selectedTask) return;
@@ -285,7 +355,7 @@ function App() {
           <p>Time Tracker</p>
           {error && <div className="error-message">{error}</div>}
           <form onSubmit={handleLogin}>
-            <input
+            <input className="form-field"
               type="email"
               placeholder="Email"
               value={email}
@@ -293,7 +363,7 @@ function App() {
               required
               disabled={loading}
             />
-            <input
+            <input className="form-field"
               type="password"
               placeholder="Password"
               value={password}
@@ -305,119 +375,244 @@ function App() {
               {loading ? 'Iniciando...' : 'Iniciar Sesión'}
             </button>
           </form>
-          <div className="login-hint">
+          {/* <div className="login-hint">
             <small>Usuario de prueba: juan@deploytime.com / colaborador123</small>
-          </div>
+          </div> */}
         </div>
       </div>
     );
   }
+  if (showSettings) {
+          return (
+            <div className="app">
+              <div className="header">
+                <h2>Configuración</h2>
+                <button className="btn-logout" onClick={() => setShowSettings(false)}>
+                  🔙
+                </button>
+              </div>
 
+              <div className="content settings-view">
+
+                {/* Crear Proyecto */}
+                <div className="create-box">
+                  <h4>Crear nuevo proyecto</h4>
+
+                  <input className="form-field"
+                    type="text"
+                    placeholder="Nombre del proyecto"
+                    value={newProjectName}
+                    onChange={(e) => setNewProjectName(e.target.value)}
+                    disabled={loading}
+                  />
+
+                  <textarea className="form-field"
+                    placeholder="Descripción (opcional)"
+                    value={newProjectDescription}
+                    onChange={(e) => setNewProjectDescription(e.target.value)}
+                    disabled={loading}
+                  />
+
+                  <button
+                    className="btn-start" // <- agrega esta clase
+                    onClick={handleCreateProject}
+                    disabled={loading || !newProjectName.trim()}
+                  >
+                    Crear Proyecto
+                  </button>
+
+                </div>
+
+                {/* Crear Tarea */}
+                <div className="create-box">
+                  <h4>Crear nueva tarea</h4>
+
+                  <select className="form-field"
+                    value={selectedProject || ''}
+                    onChange={(e) => handleProjectChange(Number(e.target.value))}
+                    disabled={loading}
+                  >
+                    <option value="">Selecciona un proyecto</option>
+                    {projects.map((p) => (
+                      <option key={p.id} value={p.id}>
+                        {p.name}
+                      </option>
+                    ))}
+                  </select>
+
+                  <input className="form-field"
+                    type="text"
+                    placeholder="Nombre de la tarea"
+                    value={newTaskName}
+                    onChange={(e) => setNewTaskName(e.target.value)}
+                    disabled={loading}
+                  />
+
+                  <textarea className="form-field"
+                    placeholder="Descripción"
+                    value={newTaskDescription}
+                    onChange={(e) => setNewTaskDescription(e.target.value)}
+                    disabled={loading}
+                  />
+
+                  <input className="form-field"
+                    type="number"
+                    placeholder="Horas estimadas"
+                    value={newTaskEstimatedHours ?? ''}
+                    onChange={(e) =>
+                      setNewTaskEstimatedHours(
+                        e.target.value ? Number(e.target.value) : undefined
+                      )
+                    }
+                    disabled={loading}
+                  />
+
+                  <button
+                    className="btn-start" // <- igual estilo que Iniciar Timer
+                    onClick={handleCreateTask}
+                    disabled={loading || !newTaskName.trim() || !selectedProject}
+                  >
+                    Crear Tarea
+                  </button>
+                </div>
+              </div>
+            </div>
+          );
+        }
   // Pantalla principal
   return (
     <div className="app">
       <div className="header">
-        <h2>DeployTime</h2>
-        <button className="btn-logout" onClick={handleLogout} title="Cerrar sesión">
+        <button
+          className="btn-logout header-icon"
+          onClick={() => setShowSettings(true)}
+          title="Configuración"
+        >
           ⚙️
         </button>
+        <h2>DeployTime</h2>
+        <button
+          className="btn-logout header-icon"
+          onClick={handleLogout}
+          title="Cerrar sesión"
+        >
+          ✕
+        </button>
+
       </div>
 
       {error && <div className="error-banner">{error}</div>}
-
+      
       <div className="content">
         {loading && !activeTimer && <div className="loading">Cargando...</div>}
 
-        {activeTimer ? (
-          <div className="timer-active">
-            <div className="timer-info">
-              <div className="project-name">
-                {(() => {
-                  const task = activeTimer.task || tasks.find((t) => t.id === activeTimer.task_id);
-                  const project = task ? projects.find(p => p.id === task.project_id) : null;
-                  return project?.name || 'Proyecto';
-                })()}
-              </div>
-              <div className="task-name">
-                {activeTimer.task?.name ||
-                 tasks.find((t) => t.id === activeTimer.task_id)?.name ||
-                 'Tarea'}
-              </div>
-            </div>
+        {activeTimer || isPaused ? (
+  <div className="timer-active">
+    <div className="timer-info">
+      <div className="project-name">
+        {(() => {
+          const task =
+            activeTimer?.task || tasks.find((t) => t.id === (activeTimer?.task_id || selectedTask));
+          const project = task ? projects.find((p) => p.id === task.project_id) : null;
+          return project?.name || 'Proyecto';
+        })()}
+      </div>
 
-            <div className="timer-display">{elapsedTime}</div>
+      <div className="task-name">
+        {activeTimer?.task?.name ||
+          tasks.find((t) => t.id === (activeTimer?.task_id || selectedTask))?.name ||
+          'Tarea'}
+      </div>
+    </div>
 
-            <div className="task-info">
-              <p className="timer-start-time">
-                Creada: {(() => {
-                  const task = activeTimer.task || tasks.find((t) => t.id === activeTimer.task_id);
-                  if (task?.created_at) {
-                    const date = new Date(task.created_at);
-                    return `${date.toLocaleDateString('es-ES')} ${date.toLocaleTimeString('es-ES')}`;
-                  }
-                  return 'N/A';
-                })()}
-              </p>
-            </div>
+    <div className="timer-display">{elapsedTime}</div>
 
-            <div className="timer-controls">
-              <button
-                className="btn-pause"
-                onClick={handlePauseTimer}
-                disabled={loading}
-              >
-                ⏸️ Pausar
-              </button>
-              <button className="btn-stop" onClick={handleStopTimer} disabled={loading}>
-                {loading ? 'Deteniendo...' : '⏹️ Stop'}
-              </button>
-            </div>
-          </div>
-        ) : (
-          <div className="timer-idle">
-            <div className="select-group">
-              <label>Proyecto:</label>
-              <select
-                value={selectedProject || ''}
-                onChange={(e) => handleProjectChange(Number(e.target.value))}
-                disabled={loading}
-              >
-                <option value="">Selecciona un proyecto</option>
-                {projects.map((project) => (
-                  <option key={project.id} value={project.id}>
-                    {project.name}
-                  </option>
-                ))}
-              </select>
-            </div>
+        <div className="task-info">
+      <p className="timer-start-time">
+        Creada:{' '}
+        {currentTask?.created_at
+          ? (() => {
+              const date = new Date(currentTask.created_at);
+              return `${date.toLocaleDateString('es-ES')} ${date.toLocaleTimeString('es-ES')}`;
+            })()
+          : 'N/A'}
+      </p>
 
-            {selectedProject && (
-              <div className="select-group">
-                <label>Tarea:</label>
-                <select
-                  value={selectedTask || ''}
-                  onChange={(e) => setSelectedTask(Number(e.target.value))}
-                  disabled={loading}
-                >
-                  <option value="">Selecciona una tarea</option>
-                  {tasks.map((task) => (
-                    <option key={task.id} value={task.id}>
-                      {task.name}
-                    </option>
-                  ))}
-                </select>
-              </div>
-            )}
+      {currentTask?.estimated_hours != null && (
+        <p className="timer-start-time">
+          Tiempo estimado: {currentTask.estimated_hours} h
+        </p>
+      )}
+    </div>
 
-            <button
-              className="btn-start"
-              onClick={handleStartTimer}
-              disabled={!selectedTask || loading}
-            >
-              {loading ? 'Iniciando...' : 'Iniciar Timer'}
-            </button>
-          </div>
-        )}
+
+    <div className="timer-controls">
+
+      {/* SI ESTÁ PAUSADO → MOSTRAR BOTÓN PLAY */}
+      {isPaused && (
+        <button className="btn-pause" onClick={handleStartTimer} disabled={loading}>
+          ▶️ Play
+        </button>
+      )}
+
+      {/* SI ESTÁ ACTIVO → MOSTRAR BOTÓN PAUSAR */}
+      {activeTimer && (
+        <button className="btn-pause" onClick={handlePauseTimer} disabled={loading}>
+          ⏸️ Pausar
+        </button>
+      )}
+
+      {/* STOP SIEMPRE DISPONIBLE EN AMBOS ESTADOS */}
+      <button className="btn-stop" onClick={handleStopTimer} disabled={loading}>
+        ⏹️ Stop
+      </button>
+    </div>
+  </div>
+) : (
+  // --- NO HAY TIMER ACTIVO, NI PAUSADO → MUESTRA FORM NORMAL ---
+  <div className="timer-idle">
+    <div className="select-group">
+      <label>Proyecto:</label>
+      <select
+        value={selectedProject || ''}
+        onChange={(e) => handleProjectChange(Number(e.target.value))}
+        disabled={loading}
+      >
+        <option value="">Selecciona un proyecto</option>
+        {projects.map((project) => (
+          <option key={project.id} value={project.id}>
+            {project.name}
+          </option>
+        ))}
+      </select>
+    </div>
+    
+
+    {selectedProject && (
+      <div className="select-group">
+        <label>Tarea:</label>
+        <select
+          value={selectedTask || ''}
+          onChange={(e) => setSelectedTask(Number(e.target.value))}
+          disabled={loading}
+        >
+          <option value="">Selecciona una tarea</option>
+          {tasks.map((task) => (
+            <option key={task.id} value={task.id}>
+              {task.name}
+            </option>
+          ))}
+        </select>
+      </div>
+    )}
+    
+
+    <button className="btn-start" onClick={handleStartTimer} disabled={!selectedTask || loading}>
+      {loading ? 'Iniciando...' : 'Iniciar Timer'}
+    </button>
+  </div>
+)}
+
       </div>
 
       <div className="footer">
