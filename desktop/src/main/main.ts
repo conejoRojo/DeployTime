@@ -1,11 +1,12 @@
 import { app, BrowserWindow, Tray, Menu, nativeImage } from 'electron';
 import * as path from 'path';
-import * as isDev from 'electron-is-dev';
 
 let mainWindow: BrowserWindow | null = null;
 let tray: Tray | null = null;
 
 function createWindow() {
+  const isDev = !app.isPackaged;
+
   mainWindow = new BrowserWindow({
     width: 400,
     height: 600,
@@ -23,7 +24,7 @@ function createWindow() {
 
   // Cargar la aplicación React
   if (isDev) {
-    mainWindow.loadURL('http://localhost:3000');
+    mainWindow.loadURL('http://localhost:3001');
     mainWindow.webContents.openDevTools({ mode: 'detach' });
   } else {
     mainWindow.loadFile(path.join(__dirname, '../renderer/index.html'));

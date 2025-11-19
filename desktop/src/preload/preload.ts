@@ -11,7 +11,7 @@ contextBridge.exposeInMainWorld('electronAPI', {
   },
 
   onMessage: (channel: string, callback: (data: any) => void) => {
-    const validChannels = ['timer-update', 'sync-complete', 'inactivity-warning'];
+    const validChannels = ['timer-update', 'sync-complete', 'inactivity-warning', 'app-closing'];
     if (validChannels.includes(channel)) {
       ipcRenderer.on(channel, (_event, data) => callback(data));
     }

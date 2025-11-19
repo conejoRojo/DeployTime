@@ -5,6 +5,8 @@ import path from 'path';
 export default defineConfig({
   plugins: [react()],
   base: './',
+  root: '.',
+  publicDir: 'public',
   build: {
     outDir: 'dist/renderer',
     emptyOutDir: true,
@@ -15,7 +17,8 @@ export default defineConfig({
     },
   },
   server: {
-    port: 3000,
+    host: '127.0.0.1',
+    port: 3001,
     strictPort: true,
   },
 });

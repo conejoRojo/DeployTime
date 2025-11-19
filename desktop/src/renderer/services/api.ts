@@ -200,11 +200,16 @@ class ApiService {
 
   async getActiveTimeEntry(): Promise<TimeEntry | null> {
     try {
-      const response = await this.client.get<{ active_entry: TimeEntry | null }>(
+      const response = await this.client.get<TimeEntry>(
         '/my/active-time-entry'
       );
-      return response.data.active_entry;
+      // Si el backend retorna un objeto vacío o null, retornar null
+      if (!response.data || !response.data.id) {
+        return null;
+      }
+      return response.data;
     } catch (error) {
+      console.error('Error al obtener timer activo:', error);
       return null;
     }
   }
@@ -217,6 +222,30 @@ class ApiService {
       params,
     });
     return response.data;
+  }
+
+  // Obtener tiempo total acumulado en una tarea
+  async getTaskTotalTime(taskId: number): Promise<number> {
+    try {
+      const entries = await this.getMyTimeEntries();
+      const taskEntries = entries.filter(
+        (entry) => entry.task_id === taskId && entry.end_time !== null
+      );
+
+      let totalSeconds = 0;
+      taskEntries.forEach((entry) => {
+        if (entry.start_time && entry.end_time) {
+          const start = new Date(entry.start_time).getTime();
+          const end = new Date(entry.end_time).getTime();
+          totalSeconds += Math.floor((end - start) / 1000);
+        }
+      });
+
+      return totalSeconds;
+    } catch (error) {
+      console.error('Error al obtener tiempo total de la tarea:', error);
+      return 0;
+    }
   }
 }
 
