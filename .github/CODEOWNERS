@@ -1,0 +1,20 @@
+# CODEOWNERS - Revisión de Código
+# Líneas que empiezan con '#' son comentarios
+
+# Propietario por defecto de todo el repositorio
+* @conejoRojo
+
+# Backend Laravel - Requiere revisión de Luis
+/backend/** @conejoRojo
+
+# Archivos de configuración sensibles - Requiere revisión obligatoria
+/backend/.env.example @conejoRojo
+/backend/config/database.php @conejoRojo
+/backend/config/auth.php @conejoRojo
+/docker-compose.yml @conejoRojo
+
+# Workflows de CI/CD - Requiere revisión
+/.github/workflows/** @conejoRojo
+
+# Archivos de seguridad
+/backend/app/Http/Middleware/** @conejoRojo

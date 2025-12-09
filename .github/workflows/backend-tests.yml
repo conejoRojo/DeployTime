@@ -1,0 +1,72 @@
+name: Backend Tests (Laravel)
+
+on:
+  pull_request:
+    branches:
+      - main
+      - develop
+    paths:
+      - 'backend/**'
+  push:
+    branches:
+      - main
+      - develop
+    paths:
+      - 'backend/**'
+  workflow_dispatch:
+
+jobs:
+  laravel-tests:
+    name: Tests Laravel + Code Quality
+    runs-on: ubuntu-latest
+    
+    services:
+      mysql:
+        image: mysql:8.0
+        env:
+          MYSQL_ROOT_PASSWORD: root
+          MYSQL_DATABASE: testing
+        ports:
+          - 3306:3306
+        options: >-
+          --health-cmd="mysqladmin ping"
+          --health-interval=10s
+          --health-timeout=5s
+          --health-retries=3
+    
+    steps:
+      - name: Checkout código
+        uses: actions/checkout@v4
+      
+      - name: Setup PHP 8.2
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.2'
+          extensions: mbstring, xml, ctype, json, mysql, bcmath
+          coverage: xdebug
+      
+      - name: Copiar .env.example a .env
+        run: |
+          cd backend
+          cp .env.example .env
+          php artisan key:generate
+      
+      - name: Instalar dependencias Composer
+        run: |
+          cd backend
+          composer install --no-interaction --prefer-dist --optimize-autoloader
+      
+      - name: Configurar base de datos
+        run: |
+          cd backend
+          php artisan migrate --force
+      
+      - name: Ejecutar tests PHPUnit
+        run: |
+          cd backend
+          php artisan test --coverage --min=80
+      
+      - name: Laravel Pint (Code Style)
+        run: |
+          cd backend
+          ./vendor/bin/pint --test
