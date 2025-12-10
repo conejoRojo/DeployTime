@@ -223,5 +223,5 @@ docker-compose restart
 ## Contacto y Repositorio
 
 - **Desarrollador**: Luis Gastiarena con Claude Code AI
-- **Cliente**: [Tu nombre]
+
 - **Fecha inicio**: 17 de noviembre de 2025
