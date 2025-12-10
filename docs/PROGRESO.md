@@ -3,15 +3,15 @@
 ## Resumen Ejecutivo
 
 Se ha completado exitosamente la configuración inicial del proyecto DeployTime, incluyendo:
-- ✅ Estructura de proyecto
-- ✅ Entorno de desarrollo con Docker
-- ✅ Base de datos MySQL
-- ✅ Migraciones de base de datos
-- ✅ Modelos de Laravel con relaciones
+- Estructura de proyecto
+- Entorno de desarrollo con Docker
+- Base de datos MySQL
+- Migraciones de base de datos
+- Modelos de Laravel con relaciones
 
 ## Estado Actual: FASE 1 - Backend Setup (70% completado)
 
-### ✅ Completado
+### Completado
 
 #### 1. Estructura del Proyecto
 ```
@@ -29,9 +29,9 @@ deploytime/
 ```
 
 #### 2. Docker Compose
-- ✅ MySQL 8.0 (puerto 3308)
-- ✅ phpMyAdmin (puerto 8081)
-- ✅ Laravel App (puerto 8000)
+- MySQL 8.0 (puerto 3308)
+- phpMyAdmin (puerto 8081)
+- Laravel App (puerto 8000)
 
 **Comandos útiles:**
 ```bash
@@ -104,7 +104,7 @@ docker-compose ps           # Ver estado
   - task() - Tarea asociada
   - user() - Usuario que registró el tiempo
 
-### ⏳ Pendiente
+### Pendiente
 
 #### 5. JWT Authentication (siguiente paso)
 - Instalar tymon/jwt-auth
@@ -222,6 +222,6 @@ docker-compose restart
 
 ## Contacto y Repositorio
 
-- **Desarrollador**: Claudio (Claude Code AI)
+- **Desarrollador**: Luis Gastiarena con Claude Code AI
 - **Cliente**: [Tu nombre]
 - **Fecha inicio**: 17 de noviembre de 2025

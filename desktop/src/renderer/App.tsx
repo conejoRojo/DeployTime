@@ -488,7 +488,7 @@ const handleCreateTask = async () => { // Maneja la creación de una tarea dentr
           onClick={() => setShowSettings(true)}
           title="Configuración"
         >
-          ⚙️
+          
         </button>
         <h2>DeployTime</h2>
         <button

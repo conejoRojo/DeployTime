@@ -1,4 +1,4 @@
-# 🛡️ Buenas Prácticas de Seguridad - DeployTime
+# Buenas Prácticas de Seguridad - DeployTime
 
 **Documento**: Guía de Desarrollo Seguro  
 **Autor**: Luis Gastiarena  
@@ -7,7 +7,7 @@
 
 ---
 
-## 📋 Tabla de Contenidos
+## Tabla de Contenidos
 
 1. [Estrategia de Branching](#estrategia-de-branching)
 2. [Pipeline de Seguridad Automatizado](#pipeline-de-seguridad)
@@ -18,7 +18,7 @@
 
 ---
 
-## 🌳 Estrategia de Branching
+## Estrategia de Branching
 
 ### Ramas Principales
 ```
@@ -92,7 +92,7 @@ Closes #123
 
 ---
 
-## 🔒 Pipeline de Seguridad
+## Pipeline de Seguridad
 
 ### Herramientas Automatizadas
 
@@ -121,10 +121,10 @@ Closes #123
 
 **Ejemplo de vulnerabilidad común**:
 ```php
-// ❌ VULNERABLE (SQL Injection)
+// VULNERABLE (SQL Injection)
 $user = User::where('id', $request->id)->first();
 
-// ✅ CORRECTO
+// CORRECTO
 $user = User::where('id', (int)$request->id)->first();
 // Mejor aún: usar route model binding
 ```
@@ -160,25 +160,25 @@ API_KEY = "test_key_123"  # pragma: allowlist secret
 
 ---
 
-## 🔐 Gestión de Secretos
+## Gestión de Secretos
 
-### ❌ NUNCA HACER
+### NUNCA HACER
 ```php
-// ❌ NO hardcodear credenciales
+// NO hardcodear credenciales
 $apiKey = "sk_live_51234567890abcdef";
 $dbPassword = "MiPasswordSeguro123";
 
-// ❌ NO commitear archivos .env
+// NO commitear archivos .env
 git add .env  // NUNCA
 ```
 
-### ✅ SIEMPRE HACER
+### SIEMPRE HACER
 ```php
-// ✅ Usar variables de entorno
+// Usar variables de entorno
 $apiKey = env('STRIPE_API_KEY');
 $dbPassword = env('DB_PASSWORD');
 
-// ✅ Validar que existan
+// Validar que existan
 if (!env('STRIPE_API_KEY')) {
     throw new Exception('STRIPE_API_KEY no configurada');
 }
@@ -223,13 +223,13 @@ STRIPE_SECRET=
 
 ---
 
-## 👀 Revisión de Código
+## Revisión de Código
 
 ### Checklist del Reviewer
 
 Antes de aprobar un PR, verificar:
 
-#### ✅ Seguridad
+#### Seguridad
 
 - [ ] No hay credenciales hardcodeadas
 - [ ] Inputs del usuario están validados
@@ -237,14 +237,14 @@ Antes de aprobar un PR, verificar:
 - [ ] Archivos subidos son validados (tipo, tamaño)
 - [ ] Permisos/roles verificados en endpoints protegidos
 
-#### ✅ Calidad
+#### Calidad
 
 - [ ] Código sigue PSR-12 (PHP) o estándares del proyecto
 - [ ] Funciones tienen responsabilidad única
 - [ ] Nombres de variables/funciones son descriptivos
 - [ ] Comentarios explican el "por qué", no el "qué"
 
-#### ✅ Tests
+#### Tests
 
 - [ ] Tests unitarios para lógica de negocio
 - [ ] Tests de integración para APIs
@@ -252,7 +252,7 @@ Antes de aprobar un PR, verificar:
 
 ### Ejemplo de Revisión de Seguridad
 ```php
-// ❌ Código vulnerable enviado en PR
+// Código vulnerable enviado en PR
 public function login(Request $request) {
     $user = User::where('email', $request->email)->first();
     if ($user && $user->password == $request->password) {
@@ -267,7 +267,7 @@ public function login(Request $request) {
 // 3. Sin rate limiting
 // 4. Sin validación de input
 
-// ✅ Código corregido
+// Código corregido
 public function login(Request $request) {
     $request->validate([
         'email' => 'required|email',
@@ -286,7 +286,7 @@ public function login(Request $request) {
 
 ---
 
-## 🚨 Respuesta a Vulnerabilidades
+## Respuesta a Vulnerabilidades
 
 ### Procedimiento de Emergencia
 
@@ -336,7 +336,7 @@ public function login(Request $request) {
 
 ---
 
-## ✅ Checklist Pre-Commit
+## Checklist Pre-Commit
 
 Antes de hacer `git commit`, verificar:
 
@@ -392,7 +392,7 @@ Tracking mensual (para mejora continua):
 
 ---
 
-## 🎓 Recursos y Referencias
+## Recursos y Referencias
 
 ### Documentación Oficial
 

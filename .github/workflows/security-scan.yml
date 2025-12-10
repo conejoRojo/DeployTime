@@ -80,7 +80,7 @@ jobs:
                 const notes = results.filter(r => r.level === 'note');
                 
                 if (critical.length > 0) {
-                  comment += `### ❌ Críticos: ${critical.length}\n`;
+                  comment += `### Críticos: ${critical.length}\n`;
                   critical.slice(0, 5).forEach(r => {
                     comment += `- **${r.ruleId}**: ${r.message.text}\n`;
                     comment += `  📍 ${r.locations[0].physicalLocation.artifactLocation.uri}:${r.locations[0].physicalLocation.region.startLine}\n\n`;
@@ -108,7 +108,7 @@ jobs:
                   issue_number: context.issue.number,
                   owner: context.repo.owner,
                   repo: context.repo.repo,
-                  body: '## ✅ Semgrep SAST - Sin Vulnerabilidades\n\nNo se detectaron vulnerabilidades de seguridad en el código.'
+                  body: '## Semgrep SAST - Sin Vulnerabilidades\n\nNo se detectaron vulnerabilidades de seguridad en el código.'
                 });
               }
             } catch (error) {
@@ -184,7 +184,7 @@ jobs:
       - name: Generar reporte de vulnerabilidades
         if: github.event_name == 'pull_request'
         run: |
-          echo "## 📦 Trivy SCA - Análisis de Dependencias" > trivy-report.md
+          echo "## Trivy SCA - Análisis de Dependencias" > trivy-report.md
           echo "" >> trivy-report.md
           
           # Backend PHP
@@ -252,7 +252,7 @@ jobs:
             echo "❌ Se encontraron $SECRET_COUNT secretos potenciales"
             exit 1
           else
-            echo "✅ No se encontraron secretos hardcodeados"
+            echo "No se encontraron secretos hardcodeados"
           fi
       
       # Comentar en PR si hay secretos
@@ -264,7 +264,7 @@ jobs:
             const fs = require('fs');
             const baseline = JSON.parse(fs.readFileSync('.secrets.baseline', 'utf8'));
             
-            let comment = '## 🔐 detect-secrets - Secretos Detectados\n\n';
+            let comment = '## detect-secrets - Secretos Detectados\n\n';
             comment += '⚠️ **Se detectaron secretos potenciales hardcodeados en el código.**\n\n';
             
             for (const [file, secrets] of Object.entries(baseline.results)) {
@@ -277,7 +277,7 @@ jobs:
               }
             }
             
-            comment += '### ✅ Acciones Requeridas\n';
+            comment += '### Acciones Requeridas\n';
             comment += '1. Remover los secretos del código\n';
             comment += '2. Usar variables de entorno (.env)\n';
             comment += '3. Usar GitHub Secrets para CI/CD\n';
@@ -300,7 +300,7 @@ jobs:
               issue_number: context.issue.number,
               owner: context.repo.owner,
               repo: context.repo.repo,
-              body: '## ✅ detect-secrets - Sin Secretos Hardcodeados\n\nNo se detectaron secretos hardcodeados en el código.'
+              body: '## detect-secrets - Sin Secretos Hardcodeados\n\nNo se detectaron secretos hardcodeados en el código.'
             });
 
   # Job 4: Resumen Final
@@ -319,7 +319,7 @@ jobs:
             const trivy = '${{ needs.trivy-sca.result }}';
             const secrets = '${{ needs.detect-secrets.result }}';
             
-            let summary = '# 🛡️ Resumen de Análisis de Seguridad\n\n';
+            let summary = '# Resumen de Análisis de Seguridad\n\n';
             summary += '| Herramienta | Estado | Descripción |\n';
             summary += '|-------------|--------|-------------|\n';
             
@@ -334,7 +334,7 @@ jobs:
             summary += `| ${statusIcon(secrets)} detect-secrets | ${secrets} | Detección de secretos |\n\n`;
             
             if (semgrep === 'success' && trivy === 'success' && secrets === 'success') {
-              summary += '## ✅ Todos los Checks Pasaron\n\n';
+              summary += '## Todos los Checks Pasaron\n\n';
               summary += 'El código cumple con los estándares de seguridad establecidos.';
             } else {
               summary += '## ⚠️ Acción Requerida\n\n';

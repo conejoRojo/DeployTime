@@ -68,12 +68,12 @@ function createTray() { // Declara la función que crea el icono de bandeja
   if (fs.existsSync(iconPath)) { // Verifica si el archivo tray-icon.png existe
     icon = nativeImage.createFromPath(iconPath); // Crea la imagen del icono desde el archivo PNG
   } else { // Si el archivo no existe en esa ruta
-    console.error('[TRAY] ❌ No se encontró tray-icon.png en:', iconPath); // Log de error avisando que no se encontró el archivo
+    console.error('[TRAY] No se encontró tray-icon.png en:', iconPath); // Log de error avisando que no se encontró el archivo
     icon = nativeImage.createEmpty(); // Crea una imagen vacía como último recurso para no romper la app
   }
 
   if (!icon || icon.isEmpty()) { // Verifica si el icono es nulo o está vacío
-    console.error('[TRAY] ❌ El icono está vacío, es posible que no se vea en la bandeja'); // Advierte que el icono puede no mostrarse
+    console.error('[TRAY] El icono está vacío, es posible que no se vea en la bandeja'); // Advierte que el icono puede no mostrarse
   }
 
   tray = new Tray(icon); // Crea el icono en la bandeja del sistema usando la imagen cargada
