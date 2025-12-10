@@ -5,7 +5,7 @@
 
 ---
 
-## 🎉 Resumen de Logros
+## Resumen de Logros
 
 ### ✅ Fase 1: API Integration
 - [x] **axios** instalado para HTTP requests
@@ -51,7 +51,7 @@
 
 ---
 
-## 📊 Estadísticas Finales
+## Estadísticas Finales
 
 | Componente | Archivos | Líneas de Código | Estado |
 |-----------|----------|------------------|--------|
@@ -306,7 +306,7 @@ Al cerrar app:
 
 ---
 
-## 🧪 Testing Manual
+## Testing Manual
 
 ### Test 1: Login
 ```bash
@@ -358,7 +358,7 @@ Al cerrar app:
 
 ---
 
-## 📁 Estructura Final del Código
+## Estructura Final del Código
 
 ```
 desktop/

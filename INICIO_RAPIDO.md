@@ -14,7 +14,7 @@ Guía para iniciar el proyecto en 5 minutos.
 
 ## Inicio en 3 Pasos
 
-### 1️⃣ Iniciar Backend
+### 1. Iniciar Backend
 
 ```bash
 cd backend
@@ -26,7 +26,7 @@ docker-compose up -d
 - phpMyAdmin en http://localhost:8081
 - Laravel API en http://localhost:8000
 
-### 2️⃣ Verificar Backend
+### 2. Verificar Backend
 
 ```bash
 # Ejecutar migraciones (si es primera vez)
@@ -40,7 +40,7 @@ curl http://localhost:8000/api/auth/login \
 
 **Resultado**: Debe devolver un JWT token
 
-### 3️⃣ Iniciar Desktop App
+### 3. Iniciar Desktop App
 
 ```bash
 cd desktop
@@ -54,7 +54,7 @@ npm run dev
 
 ---
 
-## 🔑 Usuarios de Prueba
+## Usuarios de Prueba
 
 | Email | Password | Rol |
 |-------|----------|-----|
@@ -64,7 +64,7 @@ npm run dev
 
 ---
 
-## ✨ Flujo de Uso
+## Flujo de Uso
 
 ### Paso 1: Login
 1. Abrir la app desde el system tray
@@ -91,7 +91,7 @@ npm run dev
 
 ---
 
-## 📊 Datos de Prueba Incluidos
+## Datos de Prueba Incluidos
 
 - **2 Proyectos**:
   - Sistema Web de Gestión
@@ -109,7 +109,7 @@ npm run dev
 
 ---
 
-## 🐛 Troubleshooting
+## Troubleshooting
 
 ### Backend no inicia
 ```bash
@@ -143,7 +143,7 @@ npm run dev
 
 ---
 
-## 📁 URLs Importantes
+## URLs Importantes
 
 | Servicio | URL | Credenciales |
 |----------|-----|--------------|
@@ -153,7 +153,7 @@ npm run dev
 
 ---
 
-## 🧪 Testing Rápido
+## Testing Rápido
 
 ### Test de Backend
 ```bash
@@ -185,7 +185,7 @@ curl http://localhost:8000/api/projects \
 
 ---
 
-## 📖 Documentación Completa
+## Documentación Completa
 
 - [README Principal](README.md) - Visión general del proyecto
 - [Backend Completado](docs/BACKEND_COMPLETADO.md) - Detalles del backend
@@ -220,7 +220,7 @@ Una vez que todo esté funcionando:
 
 ---
 
-**¡Listo!** 🎉
+**¡Listo!**
 
 El sistema DeployTime está corriendo y listo para usar.
 

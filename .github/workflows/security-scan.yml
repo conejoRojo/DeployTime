@@ -95,7 +95,7 @@ jobs:
                   comment += `### ℹ️ Informativas: ${notes.length}\n`;
                 }
                 
-                comment += '\n📊 Ver detalles completos en la pestaña **Security** del repositorio.';
+                comment += '\nVer detalles completos en la pestaña **Security** del repositorio.';
                 
                 github.rest.issues.createComment({
                   issue_number: context.issue.number,

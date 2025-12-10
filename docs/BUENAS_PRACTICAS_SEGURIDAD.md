@@ -378,7 +378,7 @@ npm audit --audit-level=high
 
 ---
 
-## 📊 Métricas de Seguridad
+## Métricas de Seguridad
 
 Tracking mensual (para mejora continua):
 

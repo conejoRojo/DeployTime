@@ -7,7 +7,7 @@
 
 ---
 
-## 📊 Resumen Ejecutivo
+## Resumen Ejecutivo
 
 DeployTime es un **sistema completo de time tracking** para equipos de desarrollo, con aplicación de escritorio Windows y backend API REST. El proyecto ha sido **completado exitosamente** en todas sus fases, desde la arquitectura hasta la implementación final.
 
@@ -143,7 +143,7 @@ Frontend/Desktop:
 
 ---
 
-## 🧪 Testing Realizado
+## Testing Realizado
 
 ### Backend API
 ```bash
@@ -174,7 +174,7 @@ Frontend/Desktop:
 
 ---
 
-## 📁 Estructura Final
+## Estructura Final
 
 ```
 DeployTime/
@@ -355,7 +355,7 @@ npm run package:win
 
 ---
 
-## 📊 Métricas de Éxito
+## Métricas de Éxito
 
 | Métrica | Objetivo | Resultado |
 |---------|----------|-----------|

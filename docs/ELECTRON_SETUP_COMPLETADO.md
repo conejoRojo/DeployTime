@@ -244,7 +244,7 @@ Los siguientes features requieren implementación adicional:
 
 ---
 
-## 📊 Estado del Proyecto General
+## Estado del Proyecto General
 
 ### Backend API: ✅ 100% Funcional
 - Laravel 11 + JWT

@@ -5,7 +5,7 @@ Aplicación de escritorio para Windows 11 que funciona como time tracker en la b
 ## Características
 
 - 🕐 Timer en tiempo real
-- 📊 Selección de proyecto y tarea
+- Selección de proyecto y tarea
 - 🔔 Notificaciones de inactividad (10 minutos)
 - 💾 Base de datos local SQLite para trabajo offline
 - 🔄 Sincronización automática con servidor Laravel
