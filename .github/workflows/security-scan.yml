@@ -48,8 +48,9 @@ jobs:
             p/sql-injection
             p/xss
             p/security-audit
+          publishToken: ${{ secrets.SEMGREP_APP_TOKEN }}
         env:
-          SEMGREP_APP_TOKEN: ${{ secrets.SEMGREP_APP_TOKEN }}
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       
       # Subir resultados a GitHub Security (actualizado a v4)
       - name: Subir resultados SARIF a GitHub Security
@@ -251,14 +252,21 @@ jobs:
       # Escanear repositorio completo
       - name: Escanear secretos en el codigo
         run: |
-          detect-secrets scan --all-files \
-            --exclude-files '\.lock$' \
-            --exclude-files 'node_modules/' \
-            --exclude-files 'vendor/' \
-            --exclude-files '\.git/' \
-            --exclude-files 'package-lock\.json' \
-            --exclude-files 'composer\.lock' \
-            > .secrets.baseline
+          # Si existe baseline previo, usarlo para comparar
+          if [ -f ".secrets.baseline" ]; then
+            echo "Usando baseline existente para detectar solo secretos nuevos"
+            detect-secrets scan --baseline .secrets.baseline
+          else
+            echo "Generando baseline inicial de secretos"
+            detect-secrets scan --all-files \
+              --exclude-files '\.lock$' \
+              --exclude-files 'node_modules/' \
+              --exclude-files 'vendor/' \
+              --exclude-files '\.git/' \
+              --exclude-files 'package-lock\.json' \
+              --exclude-files 'composer\.lock' \
+              > .secrets.baseline
+          fi
       
       # Verificar si hay secretos detectados
       - name: Verificar resultados
