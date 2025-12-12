@@ -4,20 +4,20 @@ Sistema completo de seguimiento de tiempo para equipos de desarrollo con aplicac
 
 ---
 
-## 📋 Descripción
+## Descripción
 
 **DeployTime** es un sistema de time tracking diseñado para colaboradores y administradores que permite:
 
-- ⏱️ Trackear tiempo trabajado en tareas específicas
-- 📊 Gestionar proyectos y colaboradores (admin)
-- 💻 Aplicación de escritorio en la bandeja del sistema (Windows 11)
-- 🔄 Sincronización automática con servidor
-- 📴 Trabajo offline con base de datos local
-- ⚠️ Detector de inactividad de 10 minutos
+- Trackear tiempo trabajado en tareas específicas
+- Gestionar proyectos y colaboradores (admin)
+- Aplicación de escritorio en la bandeja del sistema (Windows 11)
+- Sincronización automática con servidor
+- Trabajo offline con base de datos local
+- Detector de inactividad de 10 minutos
 
 ---
 
-## 🏗️ Arquitectura
+## Arquitectura
 
 ### Backend (Laravel 11 API)
 - **Framework**: Laravel 11
@@ -34,7 +34,7 @@ Sistema completo de seguimiento de tiempo para equipos de desarrollo con aplicac
 
 ---
 
-## 📁 Estructura del Proyecto
+## Estructura del Proyecto
 
 ```
 DeployTime/
@@ -78,7 +78,7 @@ DeployTime/
 
 ---
 
-## 🚀 Quick Start
+## Quick Start
 
 ### Backend API
 
@@ -110,7 +110,7 @@ La aplicación se abrirá en la bandeja del sistema.
 
 ---
 
-## 📊 Base de Datos
+## Base de Datos
 
 ### Tablas
 
@@ -144,7 +144,7 @@ TimeEntry
 
 ---
 
-## 🔌 API Endpoints
+## API Endpoints
 
 ### Autenticación
 - `POST /api/auth/login` - Login con JWT
@@ -180,9 +180,9 @@ Ver documentación completa en [docs/API_TESTING.md](docs/API_TESTING.md)
 
 ---
 
-## ✅ Estado del Desarrollo
+## Estado del Desarrollo
 
-### Backend ✅ 100% Completado
+### Backend 100% Completado
 - [x] Docker Compose configurado
 - [x] MySQL 8.0 + phpMyAdmin
 - [x] Migraciones y modelos
@@ -193,7 +193,7 @@ Ver documentación completa en [docs/API_TESTING.md](docs/API_TESTING.md)
 - [x] Seeders con datos de prueba
 - [x] **TESTEADO Y FUNCIONANDO**
 
-### Desktop App ✅ 100% Completado
+### Desktop App 100% Completado
 - [x] Electron + React + TypeScript
 - [x] System tray integration
 - [x] UI completa (login + timer)
@@ -207,7 +207,7 @@ Ver documentación completa en [docs/API_TESTING.md](docs/API_TESTING.md)
 
 ---
 
-## 🛠️ Tecnologías
+## Tecnologías
 
 ### Backend
 - Laravel 11
@@ -225,7 +225,7 @@ Ver documentación completa en [docs/API_TESTING.md](docs/API_TESTING.md)
 
 ---
 
-## 📖 Documentación
+## Documentación
 
 - [Backend Completado](docs/BACKEND_COMPLETADO.md) - Estado del backend
 - [Backend Status](docs/BACKEND_STATUS.md) - Resolución de errores
@@ -236,15 +236,15 @@ Ver documentación completa en [docs/API_TESTING.md](docs/API_TESTING.md)
 
 ---
 
-## 🎯 Próximos Pasos
+## Próximos Pasos
 
-### ✅ Fase 1: Backend API - COMPLETADO
+### Fase 1: Backend API - COMPLETADO
 - [x] Laravel 11 + MySQL + Docker
 - [x] JWT Authentication
 - [x] 20+ endpoints API REST
 - [x] Seeders con datos de prueba
 
-### ✅ Fase 2: Desktop App - COMPLETADO
+### Fase 2: Desktop App - COMPLETADO
 - [x] Electron + React + TypeScript
 - [x] Integración completa con API
 - [x] SQLite local storage
@@ -259,19 +259,19 @@ Ver documentación completa en [docs/API_TESTING.md](docs/API_TESTING.md)
 
 ---
 
-## 🔐 Seguridad
+## Seguridad
 
-- ✅ JWT con tokens renovables
-- ✅ Passwords hasheados con bcrypt
-- ✅ Middleware de autenticación y autorización
-- ✅ Context Isolation en Electron
-- ✅ Preload script con whitelist de canales IPC
-- ✅ SQL injection prevention (Eloquent)
-- ✅ CORS configurado
+- JWT con tokens renovables
+- Passwords hasheados con bcrypt
+- Middleware de autenticación y autorización
+- Context Isolation en Electron
+- Preload script con whitelist de canales IPC
+- SQL injection prevention (Eloquent)
+- CORS configurado
 
 ---
 
-## 🧪 Testing
+## Testing
 
 ### Backend API
 ```bash
@@ -293,7 +293,7 @@ npm run dev
 
 ---
 
-## 📦 Deployment
+## Deployment
 
 ### Backend (Producción)
 ```bash
@@ -316,23 +316,23 @@ npm run package:win
 
 ---
 
-## 👥 Roles y Permisos
+## Roles y Permisos
 
 ### Administrador
-- ✅ CRUD completo de proyectos
-- ✅ Gestionar colaboradores
-- ✅ Ver todos los proyectos
-- ✅ Asignar tareas
+- CRUD completo de proyectos
+- Gestionar colaboradores
+- Ver todos los proyectos
+- Asignar tareas
 
 ### Colaborador
-- ✅ Ver proyectos asignados
-- ✅ CRUD de tareas en sus proyectos
-- ✅ Iniciar/detener timer
-- ✅ Ver su historial de tiempos
+- Ver proyectos asignados
+- CRUD de tareas en sus proyectos
+- Iniciar/detener timer
+- Ver su historial de tiempos
 
 ---
 
-## 🌐 URLs de Desarrollo
+## URLs de Desarrollo
 
 - **API Backend**: http://localhost:8000/api
 - **phpMyAdmin**: http://localhost:8081
@@ -341,25 +341,25 @@ npm run package:win
 
 ---
 
-## 📄 Licencia
+## Licencia
 
 MIT
 
 ---
 
-## 🤝 Contribuir
+## Contribuir
 
 Este es un proyecto privado de DeployTime.
 
 ---
 
-## 📞 Soporte
+## Soporte
 
 Para soporte, contactar al equipo de desarrollo.
 
 ---
 
-**Desarrollado por**: Claude Code AI
+**Desarrollado por**: Luis Gastiarena con Claude Code AI
 **Fecha**: Noviembre 2025
 **Versión**: 1.0.0
 **Principio**: KISSES (Keep It Simple, Smart, Efficient & Secure)

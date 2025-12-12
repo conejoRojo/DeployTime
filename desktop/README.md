@@ -5,11 +5,11 @@ Aplicación de escritorio para Windows 11 que funciona como time tracker en la b
 ## Características
 
 - 🕐 Timer en tiempo real
-- 📊 Selección de proyecto y tarea
+- Selección de proyecto y tarea
 - 🔔 Notificaciones de inactividad (10 minutos)
 - 💾 Base de datos local SQLite para trabajo offline
-- 🔄 Sincronización automática con servidor Laravel
-- 🎨 Interfaz minimalista en la bandeja del sistema
+- Sincronización automática con servidor Laravel
+- Interfaz minimalista en la bandeja del sistema
 
 ## Stack Tecnológico
 
@@ -154,12 +154,12 @@ Esto generará un instalador en `release/` que incluye:
 
 ## Estado Actual
 
-✅ Setup inicial completado
-✅ Estructura de proyecto
-✅ System tray integration
-✅ UI básica con React
-✅ TypeScript configurado
-✅ Build scripts funcionando
+Setup inicial completado
+Estructura de proyecto
+System tray integration
+UI básica con React
+TypeScript configurado
+Build scripts funcionando
 
 🔄 En desarrollo:
 - Integración con API

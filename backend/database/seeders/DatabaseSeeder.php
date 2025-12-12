@@ -135,7 +135,7 @@ class DatabaseSeeder extends Seeder
             'notes' => 'Setup completo de Flutter',
         ]);
 
-        $this->command->info('✅ Base de datos poblada correctamente');
+        $this->command->info('Base de datos poblada correctamente');
         $this->command->info('');
         $this->command->info('Credenciales de acceso:');
         $this->command->info('------------------------------');
