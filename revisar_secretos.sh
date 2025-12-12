@@ -64,3 +64,4 @@ echo "4. Revisar archivos especificos:"
 for file in $(jq -r '.results | keys[]' .secrets.baseline); do
     echo "   vim +$(jq -r ".results[\"$file\"][0].line_number" .secrets.baseline) \"$file\""
 done
+echo ""
