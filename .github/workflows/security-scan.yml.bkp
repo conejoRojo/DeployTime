@@ -1,16 +1,21 @@
 name: Security Scan (SAST + SCA + Secrets)
 
+# Cuando se ejecuta este workflow
 on:
+  # En Pull Requests hacia develop o main
   pull_request:
     branches:
       - main
       - develop
+  # En push directo a develop o main (ultima linea de defensa)
   push:
     branches:
       - main
       - develop
+  # Permitir ejecucion manual desde GitHub UI
   workflow_dispatch:
 
+# Permisos necesarios para el workflow
 permissions:
   contents: read
   security-events: write
@@ -24,11 +29,13 @@ jobs:
     runs-on: ubuntu-latest
     
     steps:
+      # Descargar codigo del repositorio
       - name: Checkout codigo
         uses: actions/checkout@v4
         with:
           fetch-depth: 0
 
+      # Ejecutar Semgrep con generacion de SARIF
       - name: Ejecutar Semgrep SAST
         uses: semgrep/semgrep-action@v1
         with:
@@ -45,13 +52,14 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       
+      # Subir resultados a GitHub Security (actualizado a v4)
       - name: Subir resultados SARIF a GitHub Security
         if: always()
         uses: github/codeql-action/upload-sarif@v4
         with:
           sarif_file: semgrep.sarif
-        continue-on-error: true
       
+      # Comentar resultados en PR
       - name: Comentar resultados en PR
         if: github.event_name == 'pull_request' && always()
         uses: actions/github-script@v7
@@ -71,6 +79,7 @@ jobs:
                 let comment = '## Semgrep SAST - Vulnerabilidades Detectadas\n\n';
                 comment += `**Total de issues encontrados: ${results.length}**\n\n`;
                 
+                // Agrupar por severidad
                 const critical = results.filter(r => r.level === 'error');
                 const warnings = results.filter(r => r.level === 'warning');
                 const notes = results.filter(r => r.level === 'note');
@@ -111,7 +120,7 @@ jobs:
               console.log('No se pudo procesar el reporte SARIF:', error);
             }
 
-  # Job 2: SCA con Trivy
+  # Job 2: SCA con Trivy (dependencias y contenedores)
   trivy-sca:
     name: SCA - Trivy (Dependencias + Docker)
     runs-on: ubuntu-latest
@@ -120,6 +129,7 @@ jobs:
       - name: Checkout codigo
         uses: actions/checkout@v4
 
+      # Escanear dependencias PHP (composer.lock)
       - name: Escanear dependencias PHP (composer)
         uses: aquasecurity/trivy-action@master
         with:
@@ -131,6 +141,7 @@ jobs:
           scanners: 'vuln'
         continue-on-error: true
       
+      # Escanear dependencias Node.js (package-lock.json)
       - name: Escanear dependencias Node.js (npm)
         uses: aquasecurity/trivy-action@master
         with:
@@ -142,6 +153,7 @@ jobs:
           scanners: 'vuln'
         continue-on-error: true
       
+      # Escanear configuracion Docker
       - name: Escanear configuracion Docker
         uses: aquasecurity/trivy-action@master
         with:
@@ -152,6 +164,7 @@ jobs:
           severity: 'CRITICAL,HIGH,MEDIUM'
         continue-on-error: true
       
+      # Subir resultados PHP a GitHub Security
       - name: Subir resultados PHP a GitHub Security
         if: always()
         uses: github/codeql-action/upload-sarif@v4
@@ -160,6 +173,7 @@ jobs:
           category: 'trivy-php'
         continue-on-error: true
       
+      # Subir resultados Node.js a GitHub Security
       - name: Subir resultados Node.js a GitHub Security
         if: always()
         uses: github/codeql-action/upload-sarif@v4
@@ -168,6 +182,7 @@ jobs:
           category: 'trivy-node'
         continue-on-error: true
       
+      # Subir resultados Docker a GitHub Security
       - name: Subir resultados Docker a GitHub Security
         if: always()
         uses: github/codeql-action/upload-sarif@v4
@@ -176,12 +191,14 @@ jobs:
           category: 'trivy-docker'
         continue-on-error: true
       
+      # Generar reporte en formato tabla para PR
       - name: Generar reporte de vulnerabilidades
         if: github.event_name == 'pull_request'
         run: |
           echo "## Trivy SCA - Analisis de Dependencias" > trivy-report.md
           echo "" >> trivy-report.md
           
+          # Backend PHP
           echo "### Backend (PHP/Laravel)" >> trivy-report.md
           if [ -f "./backend/composer.lock" ]; then
             trivy fs --format table --severity CRITICAL,HIGH,MEDIUM ./backend >> trivy-report.md 2>&1 || echo "Sin vulnerabilidades criticas en backend" >> trivy-report.md
@@ -190,13 +207,15 @@ jobs:
           fi
           echo "" >> trivy-report.md
           
+          # Desktop Node.js
           echo "### Desktop (Node.js/Electron)" >> trivy-report.md
           if [ -f "./desktop/package-lock.json" ]; then
             trivy fs --format table --severity CRITICAL,HIGH,MEDIUM ./desktop >> trivy-report.md 2>&1 || echo "Sin vulnerabilidades criticas en desktop" >> trivy-report.md
           else
             echo "No se encontro package-lock.json" >> trivy-report.md
           fi
-      
+          
+      # Comentar en PR
       - name: Comentar resultados en PR
         if: github.event_name == 'pull_request'
         uses: actions/github-script@v7
@@ -212,7 +231,7 @@ jobs:
               body: report
             });
 
-  # Job 3: Deteccion de Secretos
+  # Job 3: Deteccion de Secretos con detect-secrets
   detect-secrets:
     name: Deteccion de Secretos Hardcodeados
     runs-on: ubuntu-latest
@@ -223,14 +242,17 @@ jobs:
         with:
           fetch-depth: 0
       
+      # Instalar detect-secrets y jq
       - name: Instalar dependencias
         run: |
           pip install detect-secrets
           sudo apt-get update
           sudo apt-get install -y jq
       
+      # Escanear repositorio completo
       - name: Escanear secretos en el codigo
         run: |
+          # Si existe baseline previo, usarlo para comparar
           if [ -f ".secrets.baseline" ]; then
             echo "Usando baseline existente para detectar solo secretos nuevos"
             detect-secrets scan --baseline .secrets.baseline
@@ -246,9 +268,11 @@ jobs:
               > .secrets.baseline
           fi
       
+      # Verificar si hay secretos detectados
       - name: Verificar resultados
         id: check_secrets
         run: |
+          # Contar secretos encontrados
           SECRET_COUNT=$(jq '.results | to_entries | map(.value | length) | add // 0' .secrets.baseline)
           echo "secrets_found=$SECRET_COUNT" >> $GITHUB_OUTPUT
           
@@ -259,6 +283,7 @@ jobs:
             echo "No se encontraron secretos hardcodeados"
           fi
       
+      # Comentar en PR si hay secretos
       - name: Comentar secretos en PR
         if: failure() && github.event_name == 'pull_request'
         uses: actions/github-script@v7
@@ -293,6 +318,7 @@ jobs:
               body: comment
             });
       
+      # Comentar exito en PR
       - name: Comentar exito en PR
         if: success() && github.event_name == 'pull_request'
         uses: actions/github-script@v7
