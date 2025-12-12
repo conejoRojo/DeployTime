@@ -2,6 +2,8 @@ import React, { useState, useEffect } from 'react';
 import api, { Project, Task, TimeEntry, User } from './services/api';
 import './App.css';
 
+const SYNC_INTERVAL_MS = 600_000; // define el intervalo de sincronización en milisegundos (600.000 ms = 10 minutos)
+
 const formatSecondsToTime = (totalSeconds: number): string => { // Declara una función auxiliar para formatear segundos a hh:mm:ss
   const seconds = totalSeconds % 60; // Calcula los segundos residuales
   const totalMinutes = Math.floor(totalSeconds / 60); // Convierte el total de segundos a minutos
@@ -12,6 +14,7 @@ const formatSecondsToTime = (totalSeconds: number): string => { // Declara una f
 
   return `${pad(hours)}:${pad(minutes)}:${pad(seconds)}`; // Devuelve el string con formato hh:mm:ss
 }; // Fin de la función formatSecondsToTime
+
 
 function App() {
   const [isLoggedIn, setIsLoggedIn] = useState(false);
@@ -38,6 +41,93 @@ function App() {
   const isPaused = !activeTimer && selectedTask !== null && accumulatedTime > 0;
 
   const currentTask = (activeTimer?.task as Task | undefined) || tasks.find((t) => t.id === (activeTimer?.task_id || selectedTask));
+
+  const syncFromServer = async (): Promise<void> => {              // declara una función asíncrona para sincronizar datos desde el servidor
+    if (!isLoggedIn) {                                            // si el usuario no está logueado
+      return;                                                     // sale sin hacer nada
+    }
+
+    try {                                                         // inicia bloque try para manejar errores
+      setLoading(true);                                           // marca la UI como "cargando" para evitar acciones mientras sincroniza
+      setError(null);                                             // limpia cualquier error anterior
+
+      const remoteProjects = await api.getProjects();             // llama a la API para obtener la lista de proyectos remotos
+
+      setProjects(remoteProjects);                                // actualiza el estado local de proyectos con los que vienen del servidor
+
+      // Mantener el proyecto seleccionado si todavía existe       //
+      if (selectedProject) {                                      // verifica si hay un proyecto seleccionado actualmente
+        const stillExists = remoteProjects.some(                  // busca si el proyecto seleccionado sigue existiendo en la lista remota
+          (p) => p.id === selectedProject                         // compara el id del proyecto de la lista con el id seleccionado
+        );                                                        //
+        if (!stillExists) {                                       // si el proyecto seleccionado ya no existe
+          setSelectedProject(null);                               // limpia la selección de proyecto
+          setTasks([]);                                           // limpia también las tareas mostradas
+        }                                                         //
+      }
+
+      // Si no hay proyecto seleccionado pero la lista no está vacía, selecciona el primero
+      if (!selectedProject && remoteProjects.length > 0) {        // si no hay proyecto seleccionado y hay al menos un proyecto remoto
+        const firstProjectId = remoteProjects[0].id;              // toma el id del primer proyecto de la lista
+        setSelectedProject(firstProjectId);                       // lo marca como proyecto seleccionado
+        const remoteTasks = await api.getProjectTasks(            // obtiene las tareas del primer proyecto desde la API
+          firstProjectId                                         // pasa el id del proyecto al método de la API
+        );                                                        //
+        setTasks(remoteTasks);                                    // actualiza el estado local de tareas con las que vienen del servidor
+      }
+
+      // Si hay proyecto seleccionado y sigue existiendo, refrescamos tareas también
+      if (selectedProject) {                                      // si hay un proyecto seleccionado (y llegó hasta acá, por lo que sigue existiendo)
+        const remoteTasks = await api.getProjectTasks(            // llama a la API para obtener las tareas del proyecto seleccionado
+          selectedProject                                        // pasa el id del proyecto seleccionado
+        );                                                        //
+        setTasks(remoteTasks);                                    // actualiza el estado local de tareas
+      }
+
+      // Opcional: acá podrías refrescar un timeEntry activo si tu API lo soporta
+      // const active = await api.getActiveTimeEntry();           // ejemplo de llamada opcional
+      // setActiveTimer(active ?? null);                          // actualiza el timer activo con lo que diga el servidor
+
+    } catch (err: any) {                                          // captura cualquier error que ocurra en el try
+      console.error('Error al sincronizar con el servidor', err); // muestra el error en consola para diagnóstico
+      setError('No se pudo sincronizar con el servidor.');        // guarda un mensaje de error para mostrar en la UI
+    } finally {                                                   // bloque que se ejecuta siempre, haya error o no
+      setLoading(false);                                          // desmarca la UI como "cargando"
+    }
+  };
+
+  useEffect(() => {                                              // declara un efecto que se ejecuta cuando cambia isLoggedIn
+    if (!isLoggedIn) {                                           // si el usuario NO está logueado
+      return;                                                    // no programa la sincronización
+    }
+
+    let cancelled = false;                                       // bandera para evitar ejecutar lógica cuando el componente se desmonta
+
+    const runInitialSync = async () => {                         // define una función interna para ejecutar una primera sync inmediata
+      try {                                                      // bloque try para manejar errores
+        await syncFromServer();                                  // llama a la función de sincronización definida arriba
+      } catch (err) {                                            // captura cualquier error
+        console.error('Error en sync inicial', err);             // escribe en consola el error
+      }
+    };
+
+    runInitialSync();                                            // ejecuta la sincronización inicial apenas el usuario se loguea
+
+    const intervalId = window.setInterval(() => {                // crea un intervalo periódico usando setInterval del navegador
+      if (cancelled) {                                           // si el efecto ya se canceló
+        return;                                                  // sale sin hacer nada
+      }
+      syncFromServer().catch((err) => {                          // llama a la función de sincronización y maneja errores
+        console.error('Error en sync periódica', err);           // escribe en consola el error de la sync periódica
+      });
+    }, SYNC_INTERVAL_MS);                                        // fija el intervalo en la constante SYNC_INTERVAL_MS (10 minutos)
+
+    return () => {                                               // función de limpieza del efecto
+      cancelled = true;                                          // marca la bandera como cancelada
+      window.clearInterval(intervalId);                          // limpia el intervalo para evitar fugas de recursos
+    };
+  }, [isLoggedIn]);                                              // ejecuta este efecto sólo cuando cambia isLoggedIn (login / logout)
+
 
     // Timer update - tiempo acumulado (todas las sesiones previas) + sesión actual
   useEffect(() => { // Declara un efecto que se ejecuta cuando cambia el timer activo o el tiempo acumulado
@@ -153,6 +243,7 @@ function App() {
 
     try {
       const response = await api.login(email, password);
+      
       setUser(response.user);
       setIsLoggedIn(true);
 
@@ -371,8 +462,12 @@ const handleCreateTask = async () => { // Maneja la creación de una tarea dentr
               required
               disabled={loading}
             />
-            <button type="submit" disabled={loading}>
-              {loading ? 'Iniciando...' : 'Iniciar Sesión'}
+            <button
+              type="submit"                                           // el botón dispara el submit del formulario
+              className="btn-start"                                   // la clase que ya usás para estilo
+              disabled={loading || !email || !password}               // se deshabilita si está cargando o faltan datos
+            >
+              {loading ? 'Ingresando...' : 'Iniciar sesión'}         
             </button>
           </form>
           {/* <div className="login-hint">
