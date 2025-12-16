@@ -14,7 +14,7 @@ permissions:
   actions: read
 
 jobs:
-  # Job 1: SAST con Semgrep - CORREGIDO
+  # Job 1: SAST con   
   semgrep-sast:
     name: SAST - Semgrep (PHP + JavaScript)
     runs-on: ubuntu-latest
@@ -31,6 +31,7 @@ jobs:
           config: >-
             p/owasp-top-ten
             p/php
+            p/laravel
             p/javascript
             p/react
             p/sql-injection
@@ -39,13 +40,72 @@ jobs:
           publishToken: ${{ secrets.SEMGREP_APP_TOKEN }}
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-
+      
       - name: Subir resultados SARIF a GitHub Security
         if: always()
         uses: github/codeql-action/upload-sarif@v4
         with:
           sarif_file: semgrep.sarif
-          category: semgrep
+        continue-on-error: true
+      
+      - name: Comentar resultados en PR
+        if: github.event_name == 'pull_request' && always()
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const fs = require('fs');
+            try {
+              if (!fs.existsSync('semgrep.sarif')) {
+                console.log('No se genero archivo SARIF');
+                return;
+              }
+              
+              const sarif = JSON.parse(fs.readFileSync('semgrep.sarif', 'utf8'));
+              const results = sarif.runs[0].results || [];
+              
+              if (results.length > 0) {
+                let comment = '## Semgrep SAST - Vulnerabilidades Detectadas\n\n';
+                comment += `**Total de issues encontrados: ${results.length}**\n\n`;
+                
+                const critical = results.filter(r => r.level === 'error');
+                const warnings = results.filter(r => r.level === 'warning');
+                const notes = results.filter(r => r.level === 'note');
+                
+                if (critical.length > 0) {
+                  comment += `### Criticos: ${critical.length}\n`;
+                  critical.slice(0, 5).forEach(r => {
+                    comment += `- **${r.ruleId}**: ${r.message.text}\n`;
+                    comment += `  ${r.locations[0].physicalLocation.artifactLocation.uri}:${r.locations[0].physicalLocation.region.startLine}\n\n`;
+                  });
+                }
+                
+                if (warnings.length > 0) {
+                  comment += `### Advertencias: ${warnings.length}\n`;
+                }
+                
+                if (notes.length > 0) {
+                  comment += `### Informativas: ${notes.length}\n`;
+                }
+                
+                comment += '\nVer detalles completos en la pestana **Security** del repositorio.';
+                
+                github.rest.issues.createComment({
+                  issue_number: context.issue.number,
+                  owner: context.repo.owner,
+                  repo: context.repo.repo,
+                  body: comment
+                });
+              } else {
+                github.rest.issues.createComment({
+                  issue_number: context.issue.number,
+                  owner: context.repo.owner,
+                  repo: context.repo.repo,
+                  body: '## Semgrep SAST - Sin Vulnerabilidades\n\nNo se detectaron vulnerabilidades de seguridad en el codigo.'
+                });
+              }
+            } catch (error) {
+              console.log('No se pudo procesar el reporte SARIF:', error);
+            }
 
   # Job 2: SCA con Trivy
   trivy-sca:
@@ -128,10 +188,13 @@ jobs:
         run: |
           if [ -f ".secrets.baseline" ]; then
             echo "✓ Usando baseline existente para detectar solo secretos nuevos"
+            # Comparar scan actual con baseline. Guardar resultados para contar nuevos hallazgos.
             detect-secrets scan --baseline .secrets.baseline --all-files > .secrets.baseline.new || true
+            # Reemplazar baseline con resultado merged/actualizado para que el check cuente nuevos hallazgos
             mv .secrets.baseline.new .secrets.baseline
           else
-            echo "⚠️ Generando baseline inicial de secretos"
+            echo "⚠️ Generando baseline inicial de secretos (esta ejecucion NO fallara)"
+            echo "   Por favor audite y commitee .secrets.baseline"
             detect-secrets scan --all-files \
               --exclude-files '\.lock$' \
               --exclude-files 'node_modules/' \
@@ -147,8 +210,9 @@ jobs:
               --exclude-files 'build/' \
               --exclude-files '\.map$' \
               > .secrets.baseline
+            # Marcar que baseline fue creado durante este run para que verify step no falle
             echo "BASELINE_CREATED=true" >> $GITHUB_ENV
-            echo "::warning::Baseline inicial generada. Audite localmente: python -m detect_secrets audit .secrets.baseline"
+            echo "::warning::Baseline inicial generada con exclusiones. Revise .secrets.baseline localmente con 'detect-secrets audit .secrets.baseline' y commitee si es correcto."
           fi
 
       - name: Verificar resultados
@@ -157,18 +221,59 @@ jobs:
           SECRET_COUNT=$(jq '.results | to_entries | map(.value | length) | add // 0' .secrets.baseline)
           echo "secrets_found=$SECRET_COUNT" >> $GITHUB_OUTPUT
           
+          # Si recien creamos el baseline en este run, mostrar info pero NO fallar
           if [ "${BASELINE_CREATED}" = "true" ]; then
-            echo "✓ Baseline inicial creada con $SECRET_COUNT hallazgos"
-            echo "  No falla en primera ejecución"
+            echo "✓ Baseline inicial creada en este run con $SECRET_COUNT hallazgos"
+            echo "  No se marcan como errores en primera ejecucion"
+            echo "  Por favor audite localmente y commitee .secrets.baseline si corresponde"
+            echo ""
+            echo "Comandos para auditar:"
+            echo "  pip install detect-secrets"
+            echo "  detect-secrets audit .secrets.baseline"
+            echo "  git add .secrets.baseline"
+            echo "  git commit -m 'chore: baseline de secretos auditado'"
             exit 0
           fi
           
+          # Si baseline ya existia, fallar solo si hay secretos (indica nuevos secretos)
           if [ "$SECRET_COUNT" -gt 0 ]; then
             echo "⚠️ Se encontraron $SECRET_COUNT secretos potenciales"
+            echo "Esto puede indicar:"
+            echo "  1. Secretos nuevos agregados al codigo"
+            echo "  2. Baseline no esta auditado (use: detect-secrets audit .secrets.baseline)"
             exit 1
           else
-            echo "✓ No se encontraron secretos nuevos"
+            echo "✓ No se encontraron secretos hardcodeados nuevos"
           fi
+
+      - name: Comentar en PR si hay secretos nuevos
+        if: failure() && github.event_name == 'pull_request'
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const secretCount = '${{ steps.check_secrets.outputs.secrets_found }}';
+            const comment = `## ⚠️ Secretos Detectados
+            
+            Se encontraron **${secretCount} secretos potenciales** en el código.
+            
+            **Acción requerida:**
+            1. Ejecutar localmente: \`pip install detect-secrets\`
+            2. Auditar baseline: \`detect-secrets audit .secrets.baseline\`
+            3. Clasificar cada secreto como real o falso positivo
+            4. Commitear el baseline actualizado
+            
+            **Si son secretos reales:**
+            - Moverlos a variables de entorno (.env)
+            - Rotar las credenciales si fueron expuestas
+            
+            Ver [documentación de seguridad](https://github.com/${{ github.repository }}/blob/main/docs/SECURITY.md) para más detalles.`;
+            
+            github.rest.issues.createComment({
+              issue_number: context.issue.number,
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              body: comment
+            });
 
   # Job 4: Resumen de Seguridad
   security-summary:
@@ -182,7 +287,7 @@ jobs:
         uses: actions/github-script@v7
         with:
           script: |
-            const semgrep = '${{ needs.semgrep-sast.result }}';
+            const semgreg = '${{ needs.semgrep-sast.result }}';
             const trivy = '${{ needs.trivy-sca.result }}';
             const secrets = '${{ needs.detect-secrets.result }}';
             
@@ -199,39 +304,42 @@ jobs:
             const statusText = (status) => {
               if (status === 'success') return 'Pasó';
               if (status === 'failure') return 'Falló';
-              return 'Advertencia';
+              return 'Omitido';
             };
             
-            summary += `| ${statusIcon(semgrep)} Semgrep SAST | ${statusText(semgrep)} | Análisis estático (PHP + JS) |\n`;
-            summary += `| ${statusIcon(trivy)} Trivy SCA | ${statusText(trivy)} | Análisis de dependencias |\n`;
-            summary += `| ${statusIcon(secrets)} detect-secrets | ${statusText(secrets)} | Detección de secretos |\n\n`;
+            summary += `| ${statusIcon(semgreg)} Semgrep SAST | ${statusText(semgreg)} | Análisis estático de código (PHP + JS) |\n`;
+            summary += `| ${statusIcon(trivy)} Trivy SCA | ${statusText(trivy)} | Análisis de dependencias (PHP + Node + Docker) |\n`;
+            summary += `| ${statusIcon(secrets)} detect-secrets | ${statusText(secrets)} | Detección de secretos hardcodeados |\n\n`;
             
-            if (semgrep === 'success' && trivy === 'success' && secrets === 'success') {
-              summary += '## ✅ Pipeline Completamente Funcional\n\n';
-              summary += 'Todas las herramientas ejecutadas exitosamente.\n\n';
+            if (semgreg === 'success' && trivy === 'success' && secrets === 'success') {
+              summary += '## ✅ Todos los Checks Pasaron\n\n';
+              summary += 'El código cumple con los estándares de seguridad establecidos.\n\n';
               summary += '**Próximos pasos:**\n';
-              summary += '- Revisar alertas en Security tab\n';
+              summary += '- Revisar alertas en [Security tab](https://github.com/${{ github.repository }}/security/code-scanning)\n';
               summary += '- Priorizar vulnerabilidades CRITICAL/HIGH\n';
               summary += '- Actualizar dependencias según sea necesario\n';
             } else {
-              summary += '## Estado del Pipeline\n\n';
-              if (semgrep !== 'success') {
-                summary += '- **Semgrep:** Revisar configuración o resultados\n';
+              summary += '## ⚠️ Acción Requerida\n\n';
+              summary += 'Se detectaron problemas de seguridad:\n\n';
+              if (semgreg !== 'success') {
+                summary += '- **Semgrep:** Revisar vulnerabilidades de código en Security tab\n';
               }
               if (trivy !== 'success') {
-                summary += '- **Trivy:** Revisar vulnerabilidades detectadas\n';
+                summary += '- **Trivy:** Revisar dependencias vulnerables en Security tab\n';
               }
               if (secrets !== 'success') {
-                summary += '- **Secrets:** Auditar baseline localmente\n';
+                summary += '- **Secrets:** Auditar secretos detectados localmente\n';
+                summary += '  - Comando: `detect-secrets audit .secrets.baseline`\n';
               }
+              summary += '\nVer detalles en los jobs correspondientes.\n';
             }
             
             summary += '\n---\n\n';
-            summary += '**📊 Configuración del Pipeline:**\n';
-            summary += '- Herramientas: Semgrep (SAST), Trivy (SCA), detect-secrets\n';
-            summary += '- Costo: $0 (GitHub Actions + herramientas OSS)\n';
-            summary += '- Tiempo: 4-6 minutos por ejecución\n';
+            summary += '**📊 Métricas del Pipeline:**\n';
+            summary += '- Costo: $0 (GitHub Actions + herramientas open source)\n';
+            summary += '- Herramientas: Semgrep, Trivy, detect-secrets\n';
             summary += '- Cobertura: 100% de commits en main/develop\n';
+            summary += '- Tiempo estimado: 4-6 minutos\n';
             
             await core.summary
               .addRaw(summary)
