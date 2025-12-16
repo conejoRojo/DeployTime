@@ -14,7 +14,7 @@ permissions:
   actions: read
 
 jobs:
-  # Job 1: SAST con Semgrep
+  # Job 1: SAST con   
   semgrep-sast:
     name: SAST - Semgrep (PHP + JavaScript)
     runs-on: ubuntu-latest
@@ -33,17 +33,21 @@ jobs:
             p/php
             p/laravel
             p/javascript
+            p/react
+            p/sql-injection
+            p/xss
+            p/security-audit
           publishToken: ${{ secrets.SEMGREP_APP_TOKEN }}
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-
+      
       - name: Subir resultados SARIF a GitHub Security
         if: always()
         uses: github/codeql-action/upload-sarif@v4
         with:
           sarif_file: semgrep.sarif
-          category: semgrep
-
+        continue-on-error: true
+      
       - name: Comentar resultados en PR
         if: github.event_name == 'pull_request' && always()
         uses: actions/github-script@v7
@@ -51,17 +55,56 @@ jobs:
           script: |
             const fs = require('fs');
             try {
+              if (!fs.existsSync('semgrep.sarif')) {
+                console.log('No se genero archivo SARIF');
+                return;
+              }
+              
               const sarif = JSON.parse(fs.readFileSync('semgrep.sarif', 'utf8'));
               const results = sarif.runs[0].results || [];
-              const comment = `## 🔍 Semgrep SAST Results\n\n**Found ${results.length} potential issues.**\n\nView details in the [Security tab](https://github.com/${{ github.repository }}/security/code-scanning).`;
-              github.rest.issues.createComment({
-                issue_number: context.issue.number,
-                owner: context.repo.owner,
-                repo: context.repo.repo,
-                body: comment
-              });
+              
+              if (results.length > 0) {
+                let comment = '## Semgrep SAST - Vulnerabilidades Detectadas\n\n';
+                comment += `**Total de issues encontrados: ${results.length}**\n\n`;
+                
+                const critical = results.filter(r => r.level === 'error');
+                const warnings = results.filter(r => r.level === 'warning');
+                const notes = results.filter(r => r.level === 'note');
+                
+                if (critical.length > 0) {
+                  comment += `### Criticos: ${critical.length}\n`;
+                  critical.slice(0, 5).forEach(r => {
+                    comment += `- **${r.ruleId}**: ${r.message.text}\n`;
+                    comment += `  ${r.locations[0].physicalLocation.artifactLocation.uri}:${r.locations[0].physicalLocation.region.startLine}\n\n`;
+                  });
+                }
+                
+                if (warnings.length > 0) {
+                  comment += `### Advertencias: ${warnings.length}\n`;
+                }
+                
+                if (notes.length > 0) {
+                  comment += `### Informativas: ${notes.length}\n`;
+                }
+                
+                comment += '\nVer detalles completos en la pestana **Security** del repositorio.';
+                
+                github.rest.issues.createComment({
+                  issue_number: context.issue.number,
+                  owner: context.repo.owner,
+                  repo: context.repo.repo,
+                  body: comment
+                });
+              } else {
+                github.rest.issues.createComment({
+                  issue_number: context.issue.number,
+                  owner: context.repo.owner,
+                  repo: context.repo.repo,
+                  body: '## Semgrep SAST - Sin Vulnerabilidades\n\nNo se detectaron vulnerabilidades de seguridad en el codigo.'
+                });
+              }
             } catch (error) {
-              console.log('Could not read SARIF file:', error.message);
+              console.log('No se pudo procesar el reporte SARIF:', error);
             }
 
   # Job 2: SCA con Trivy
