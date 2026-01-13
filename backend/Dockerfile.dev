@@ -25,8 +25,20 @@ WORKDIR /var/www
 # Copy existing application directory
 COPY . /var/www
 
+# Copy entrypoint script and make it executable
+COPY docker/entrypoint.sh /usr/local/bin/entrypoint.sh
+RUN chmod +x /usr/local/bin/entrypoint.sh
+
+# Ensure cache and vendor directories exist and are writable during build
+RUN mkdir -p /var/www/bootstrap/cache \
+    && chown -R www-data:www-data /var/www/bootstrap/cache \
+    && mkdir -p /var/www/vendor \
+    && chown -R www-data:www-data /var/www/vendor
+
 # Install dependencies
 RUN composer install --no-interaction --prefer-dist --optimize-autoloader
+
+ENTRYPOINT ["/usr/local/bin/entrypoint.sh"]
 
 # Expose port
 EXPOSE 8000
