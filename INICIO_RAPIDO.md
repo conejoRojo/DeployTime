@@ -143,6 +143,55 @@ npm run dev
 
 ---
 
+## Notas sobre Docker (desarrollo) 🔧
+
+Si ves errores como "The /var/www/bootstrap/cache directory must be present and writable" o "Failed opening required '/var/www/vendor/autoload.php'", prueba las siguientes opciones:
+
+- Reconstruir imagen y levantar el servicio `app`:
+
+```bash
+docker-compose -f backend/docker-compose.yml up -d --build app
+```
+
+- Forzar recreación si ya existe el contenedor:
+
+```bash
+docker-compose -f backend/docker-compose.yml up -d --force-recreate --build app
+```
+
+- Ejecutar `composer` dentro del contenedor (si `vendor` está vacío o faltan dependencias):
+
+```bash
+docker-compose -f backend/docker-compose.yml run --rm app composer install --no-interaction --prefer-dist --optimize-autoloader
+# o si el contenedor ya está corriendo:
+docker-compose exec app composer install --no-interaction --prefer-dist --optimize-autoloader
+```
+
+- Si usas el volumen `vendor` y necesitas regenerarlo (vaciar y volver a crear):
+
+```bash
+docker volume rm backend_vendor
+docker-compose -f backend/docker-compose.yml up -d --build app
+```
+
+- Ajustar permisos si hay problemas de escritura (útil en bind mounts/Windows):
+
+```bash
+docker-compose exec app chown -R www-data:www-data /var/www/bootstrap/cache /var/www/vendor
+# en caso extremo:
+docker-compose exec app chmod -R 0777 /var/www/bootstrap/cache /var/www/vendor
+```
+
+- Ver logs en tiempo real para depurar:
+
+```bash
+docker-compose -f backend/docker-compose.yml logs -f app
+```
+
+Consejo: el contenedor incluye un `entrypoint` que crea `bootstrap/cache` y lanza `composer install` si `vendor` está vacío; en Windows los bind mounts pueden ocultar cambios hechos en la capa de la imagen, por lo que a veces es necesario eliminar el volumen `backend_vendor` para recuperar los `vendor` generados en la imagen.
+
+---
+
 ## URLs Importantes
 
 | Servicio | URL | Credenciales |
