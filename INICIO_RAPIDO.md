@@ -190,6 +190,38 @@ docker-compose -f backend/docker-compose.yml logs -f app
 
 Consejo: el contenedor incluye un `entrypoint` que crea `bootstrap/cache` y lanza `composer install` si `vendor` está vacío; en Windows los bind mounts pueden ocultar cambios hechos en la capa de la imagen, por lo que a veces es necesario eliminar el volumen `backend_vendor` para recuperar los `vendor` generados en la imagen.
 
+### Snippet útil: fragmento de `Dockerfile.dev` (entrypoint & permisos)
+
+```dockerfile
+# Copy entrypoint script and make it executable
+COPY docker/entrypoint.sh /usr/local/bin/entrypoint.sh
+RUN chmod +x /usr/local/bin/entrypoint.sh
+
+# Ensure cache and vendor directories exist and are writable during build
+RUN mkdir -p /var/www/bootstrap/cache \
+    && chown -R www-data:www-data /var/www/bootstrap/cache \
+    && mkdir -p /var/www/vendor \
+    && chown -R www-data:www-data /var/www/vendor
+
+ENTRYPOINT ["/usr/local/bin/entrypoint.sh"]
+```
+
+### Comandos rápidos para reiniciar (desarrollo)
+
+- Reconstruir y levantar `app`:
+
+```bash
+docker-compose -f backend/docker-compose.yml up -d --build app
+```
+
+- Reinicio completo:
+
+```bash
+docker-compose -f backend/docker-compose.yml down && docker-compose -f backend/docker-compose.yml up -d --build
+```
+
+> Después de guardar este fragmento, puedes reiniciar la app con los comandos anteriores.
+
 ---
 
 ## URLs Importantes
