@@ -35,6 +35,11 @@ function App() {
   const [accumulatedTime, setAccumulatedTime] = useState(0); // Tiempo total acumulado (todas las sesiones previas)
   // Configuración
   const [showSettings, setShowSettings] = useState(false);
+  // Aviso configurable del Timer (minutos)
+  const [warningMinutes, setWarningMinutes] = useState<number>(() => Number(localStorage.getItem('warning_minutes') || '120'));
+  const [hasWarned, setHasWarned] = useState(false);
+  const [warning, setWarning] = useState<string | null>(null);
+
   // Email y password para el formulario
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -146,6 +151,48 @@ function App() {
       clearInterval(interval); // Limpia el intervalo cuando cambia activeTimer/accumulatedTime o se desmonta el componente
     }; // Fin de la limpieza
   }, [activeTimer, accumulatedTime]); // El efecto depende del timer activo y del tiempo acumulado
+
+  // Aviso cuando el timer supera el umbral configurado (warningMinutes)
+  useEffect(() => {
+    if (!activeTimer || !activeTimer.start_time) {
+      setHasWarned(false);
+      setWarning(null);
+      return;
+    }
+
+    // Reiniciar bandera cuando empieza un nuevo timer
+    setHasWarned(false);
+
+    const interval = setInterval(() => {
+      const start = new Date(activeTimer.start_time).getTime();
+      const now = Date.now();
+      const currentSession = Math.floor((now - start) / 1000);
+      const total = accumulatedTime + currentSession;
+
+      if (!hasWarned && total >= warningMinutes * 60) {
+        // Mostrar notificación (si está disponible)
+        if ('Notification' in window) {
+          if ((Notification as any).permission === 'granted') {
+            const n = new Notification('Aviso: tiempo en tarea', {
+              body: `Llevas ${Math.floor(total / 60)} minutos en esta tarea (umbral ${warningMinutes} min). Haz click para abrir configuración.`,
+            });
+            n.onclick = () => setShowSettings(true);
+          } else {
+            (Notification as any).requestPermission().then((p: string) => {
+              if (p === 'granted') {
+                new Notification('Aviso: tiempo en tarea', { body: `Llevas ${Math.floor(total / 60)} minutos en esta tarea (umbral ${warningMinutes} min).` });
+              }
+            });
+          }
+        }
+
+        setWarning(`Has superado ${warningMinutes} minutos en esta tarea`);
+        setHasWarned(true);
+      }
+    }, 1000);
+
+    return () => clearInterval(interval);
+  }, [activeTimer, accumulatedTime, warningMinutes, hasWarned]);
 
 
   // Verificar si hay sesión guardada al iniciar
@@ -365,6 +412,7 @@ const handleCreateTask = async () => { // Maneja la creación de una tarea dentr
 
       const entry = await api.startTimer(selectedTask, 'Iniciando trabajo');
       setActiveTimer(entry);
+      setHasWarned(false); // reset warning when starting a new timer
 
       // Inicializar con el tiempo acumulado previo
       setAccumulatedTime(accumulated);
@@ -489,34 +537,79 @@ const handleCreateTask = async () => { // Maneja la creación de una tarea dentr
 
               <div className="content settings-view">
 
-                {/* Crear Proyecto */}
-                <div className="create-box">
-                  <h4>Crear nuevo proyecto</h4>
+                {/* Crear Proyecto (solo admin) */}
+                {user?.role === 'admin' && (
+                  <div className="create-box">
+                    <h4>Crear nuevo proyecto</h4>
 
-                  <input className="form-field"
-                    type="text"
-                    placeholder="Nombre del proyecto"
-                    value={newProjectName}
-                    onChange={(e) => setNewProjectName(e.target.value)}
-                    disabled={loading}
-                  />
+                    <input className="form-field"
+                      type="text"
+                      placeholder="Nombre del proyecto"
+                      value={newProjectName}
+                      onChange={(e) => setNewProjectName(e.target.value)}
+                      disabled={loading}
+                    />
 
-                  <textarea className="form-field"
-                    placeholder="Descripción (opcional)"
-                    value={newProjectDescription}
-                    onChange={(e) => setNewProjectDescription(e.target.value)}
-                    disabled={loading}
-                  />
+                    <textarea className="form-field"
+                      placeholder="Descripción (opcional)"
+                      value={newProjectDescription}
+                      onChange={(e) => setNewProjectDescription(e.target.value)}
+                      disabled={loading}
+                    />
 
-                  <button
-                    className="btn-start" // <- agrega esta clase
-                    onClick={handleCreateProject}
-                    disabled={loading || !newProjectName.trim()}
-                  >
-                    Crear Proyecto
-                  </button>
+                    <button
+                      className="btn-start" // <- agrega esta clase
+                      onClick={handleCreateProject}
+                      disabled={loading || !newProjectName.trim()}
+                    >
+                      Crear Proyecto
+                    </button>
 
-                </div>
+                  </div>
+
+                  {/* Aviso del Timer (solo admin) */}
+                  {user?.role === 'admin' && (
+                    <div className="create-box">
+                      <h4>Aviso del Timer (minutos)</h4>
+
+                      <input className="form-field"
+                        type="number"
+                        min={1}
+                        value={warningMinutes}
+                        onChange={(e) => setWarningMinutes(Number(e.target.value))}
+                        disabled={loading}
+                      />
+
+                      <div className="btn-row">
+                        <button
+                          className="btn-start"
+                          onClick={() => {
+                            localStorage.setItem('warning_minutes', String(warningMinutes));
+                            setHasWarned(false);
+                            setWarning(null);
+                          }}
+                          disabled={loading}
+                        >
+                          Guardar aviso
+                        </button>
+
+                        <button
+                          className="btn-start"
+                          onClick={() => {
+                            setWarningMinutes(120);
+                            localStorage.setItem('warning_minutes', '120');
+                            setHasWarned(false);
+                            setWarning(null);
+                          }}
+                          disabled={loading}
+                        >
+                          Restablecer
+                        </button>
+                      </div>
+
+                      <small>Al superar este tiempo, la app mostrará un aviso.</small>
+                    </div>
+                  )}
 
                 {/* Crear Tarea */}
                 <div className="create-box">
@@ -597,7 +690,7 @@ const handleCreateTask = async () => { // Maneja la creación de una tarea dentr
       </div>
 
       {error && <div className="error-banner">{error}</div>}
-      
+      {warning && <div className="warning-banner">{warning}</div>}
       <div className="content">
         {loading && !activeTimer && <div className="loading">Cargando...</div>}
 

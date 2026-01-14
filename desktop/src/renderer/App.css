@@ -163,6 +163,15 @@ body {
   border-bottom: 1px solid rgba(255, 255, 255, 0.1);
 }
 
+.warning-banner {
+  background: rgba(255, 165, 0, 0.9); /* naranja suave */
+  padding: 10px;
+  text-align: center;
+  font-size: 13px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+  color: #222;
+}
+
 .loading {
   font-size: 14px;
   opacity: 0.8;
@@ -455,6 +464,13 @@ body {
 
 /* Botón compacto en settings */
 .settings-view .btn-start {
+  padding: 8px 10px;
+}
+
+.btn-row {
+  display: flex;
+  gap: 8px;
+}
   padding: 8px;                   /* más bajo que el botón principal */
   border-radius: 8px;
   font-size: 13px;
