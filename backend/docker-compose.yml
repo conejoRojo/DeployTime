@@ -15,6 +15,12 @@ services:
       - ./docker/mysql/my.cnf:/etc/mysql/conf.d/my.cnf
     networks:
       - deploytime_network
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-u$$MYSQL_USER", "-p$$MYSQL_PASSWORD"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
 
   app:
     build:
@@ -29,7 +35,8 @@ services:
     ports:
       - "8000:8000"
     depends_on:
-      - mysql
+      mysql:
+        condition: service_healthy
     networks:
       - deploytime_network
     environment:

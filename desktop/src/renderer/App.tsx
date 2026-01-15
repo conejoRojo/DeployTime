@@ -39,6 +39,7 @@ function App() {
   const [warningMinutes, setWarningMinutes] = useState<number>(() => Number(localStorage.getItem('warning_minutes') || '120'));
   const [hasWarned, setHasWarned] = useState(false);
   const [warning, setWarning] = useState<string | null>(null);
+  const [showWarningModal, setShowWarningModal] = useState(false);
 
   // Email y password para el formulario
   const [email, setEmail] = useState('');
@@ -150,48 +151,32 @@ function App() {
     return () => { // Función de limpieza del efecto
       clearInterval(interval); // Limpia el intervalo cuando cambia activeTimer/accumulatedTime o se desmonta el componente
     }; // Fin de la limpieza
+    return () => clearInterval(interval);
   }, [activeTimer, accumulatedTime]); // El efecto depende del timer activo y del tiempo acumulado
 
-  // Aviso cuando el timer supera el umbral configurado (warningMinutes)
+  // Resetear warning cuando cambia el activeTimer (nueva sesión)
   useEffect(() => {
-    if (!activeTimer || !activeTimer.start_time) {
+    if (activeTimer) {
       setHasWarned(false);
-      setWarning(null);
-      return;
+      setShowWarningModal(false);
     }
+  }, [activeTimer?.id]);
 
-    // Reiniciar bandera cuando empieza un nuevo timer
-    setHasWarned(false);
+  // Chequeo de tiempo límite
+  useEffect(() => {
+    if (!activeTimer || !activeTimer.start_time) return;
 
-    const interval = setInterval(() => {
-      const start = new Date(activeTimer.start_time).getTime();
-      const now = Date.now();
-      const currentSession = Math.floor((now - start) / 1000);
-      const total = accumulatedTime + currentSession;
+    // Calcular total actual
+    const start = new Date(activeTimer.start_time).getTime();
+    const now = Date.now();
+    const currentSession = Math.floor((now - start) / 1000);
+    const total = accumulatedTime + currentSession;
 
-      if (!hasWarned && total >= warningMinutes * 60) {
-        // Mostrar notificación (si está disponible)
-        if ('Notification' in window) {
-          if ((Notification as any).permission === 'granted') {
-            const n = new Notification('Aviso: tiempo en tarea', {
-              body: `Llevas ${Math.floor(total / 60)} minutos en esta tarea (umbral ${warningMinutes} min). Haz click para abrir configuración.`,
-            });
-            n.onclick = () => setShowSettings(true);
-          } else {
-            (Notification as any).requestPermission().then((p: string) => {
-              if (p === 'granted') {
-                new Notification('Aviso: tiempo en tarea', { body: `Llevas ${Math.floor(total / 60)} minutos en esta tarea (umbral ${warningMinutes} min).` });
-              }
-            });
-          }
-        }
-
-        setWarning(`Has superado ${warningMinutes} minutos en esta tarea`);
-        setHasWarned(true);
-      }
-    }, 1000);
-
-    return () => clearInterval(interval);
+    if (!hasWarned && total >= warningMinutes * 60) {
+      setHasWarned(true);
+      setShowWarningModal(true); 
+      // Notificaciones nativas desactivadas por solicitud del usuario
+    }
   }, [activeTimer, accumulatedTime, warningMinutes, hasWarned]);
 
 
@@ -558,58 +543,56 @@ const handleCreateTask = async () => { // Maneja la creación de una tarea dentr
                     />
 
                     <button
-                      className="btn-start" // <- agrega esta clase
+                      className="btn-start"
                       onClick={handleCreateProject}
                       disabled={loading || !newProjectName.trim()}
                     >
                       Crear Proyecto
                     </button>
+                  </div>
+                )}
 
+                {/* Aviso del Timer (para todos) */}
+                <div className="create-box">
+                  <h4>Aviso del Timer (minutos)</h4>
+
+                  <input className="form-field"
+                    type="number"
+                    min={1}
+                    value={warningMinutes}
+                    onChange={(e) => setWarningMinutes(Number(e.target.value))}
+                    disabled={loading}
+                  />
+
+                  <div className="btn-row">
+                    <button
+                      className="btn-start"
+                      onClick={() => {
+                        localStorage.setItem('warning_minutes', String(warningMinutes));
+                        setHasWarned(false);
+                        setWarning(null);
+                      }}
+                      disabled={loading}
+                    >
+                      Guardar aviso
+                    </button>
+
+                    <button
+                      className="btn-start"
+                      onClick={() => {
+                        setWarningMinutes(120);
+                        localStorage.setItem('warning_minutes', '120');
+                        setHasWarned(false);
+                        setWarning(null);
+                      }}
+                      disabled={loading}
+                    >
+                      Restablecer
+                    </button>
                   </div>
 
-                  {/* Aviso del Timer (solo admin) */}
-                  {user?.role === 'admin' && (
-                    <div className="create-box">
-                      <h4>Aviso del Timer (minutos)</h4>
-
-                      <input className="form-field"
-                        type="number"
-                        min={1}
-                        value={warningMinutes}
-                        onChange={(e) => setWarningMinutes(Number(e.target.value))}
-                        disabled={loading}
-                      />
-
-                      <div className="btn-row">
-                        <button
-                          className="btn-start"
-                          onClick={() => {
-                            localStorage.setItem('warning_minutes', String(warningMinutes));
-                            setHasWarned(false);
-                            setWarning(null);
-                          }}
-                          disabled={loading}
-                        >
-                          Guardar aviso
-                        </button>
-
-                        <button
-                          className="btn-start"
-                          onClick={() => {
-                            setWarningMinutes(120);
-                            localStorage.setItem('warning_minutes', '120');
-                            setHasWarned(false);
-                            setWarning(null);
-                          }}
-                          disabled={loading}
-                        >
-                          Restablecer
-                        </button>
-                      </div>
-
-                      <small>Al superar este tiempo, la app mostrará un aviso.</small>
-                    </div>
-                  )}
+                  <small>Al superar este tiempo, la app te preguntará qué hacer.</small>
+                </div>
 
                 {/* Crear Tarea */}
                 <div className="create-box">
@@ -656,7 +639,7 @@ const handleCreateTask = async () => { // Maneja la creación de una tarea dentr
                   />
 
                   <button
-                    className="btn-start" // <- igual estilo que Iniciar Timer
+                    className="btn-start"
                     onClick={handleCreateTask}
                     disabled={loading || !newTaskName.trim() || !selectedProject}
                   >
@@ -676,7 +659,7 @@ const handleCreateTask = async () => { // Maneja la creación de una tarea dentr
           onClick={() => setShowSettings(true)}
           title="Configuración"
         >
-          
+          ⚙️
         </button>
         <h2>DeployTime</h2>
         <button
@@ -804,8 +787,49 @@ const handleCreateTask = async () => { // Maneja la creación de una tarea dentr
       </div>
 
       <div className="footer">
-        <small>v1.0.0 - {user?.name}</small>
+        <small>v1.0.0 - {user?.name} ({user?.role === 'admin' ? 'Admin' : 'Colaborador'})</small>
       </div>
+
+      {/* Warning Modal */}
+      {showWarningModal && (
+        <div className="modal-overlay">
+          <div className="modal-content">
+            <h3>⚠️ Tiempo límite alcanzado</h3>
+            <p>Has superado los {warningMinutes} minutos en esta tarea.</p>
+            
+            <div className="modal-actions">
+              <button className="modal-btn pause" onClick={() => {
+                handlePauseTimer();
+                setShowWarningModal(false);
+              }}>
+                ⏸️ Pausar
+              </button>
+              
+              <button className="modal-btn stop" onClick={() => {
+                handleStopTimer();
+                setShowWarningModal(false);
+              }}>
+                ⏹️ Parar y descartar
+              </button>
+
+              <button className="modal-btn new-task" onClick={() => {
+                 // Stop current and let user choose new
+                 handleStopTimer(); 
+                 setShowWarningModal(false);
+              }}>
+                ➕ Iniciar nueva tarea
+              </button>
+
+              <button className="modal-btn continue" onClick={() => {
+                setShowWarningModal(false);
+                // Opcional: reiniciar contador de aviso? Por ahora solo cierra.
+              }}>
+                Continuar trabajando
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
