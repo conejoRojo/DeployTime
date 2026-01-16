@@ -16,6 +16,7 @@ class Task extends Model
         'estimated_hours',
         'status',
         'created_by',
+        'assigned_to',
     ];
 
     protected $casts = [
@@ -33,6 +34,11 @@ class Task extends Model
     public function creator()
     {
         return $this->belongsTo(User::class, 'created_by');
+    }
+
+    public function assignedTo()
+    {
+        return $this->belongsTo(User::class, 'assigned_to');
     }
 
     public function timeEntries()
