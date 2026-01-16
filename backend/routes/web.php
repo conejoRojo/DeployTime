@@ -17,7 +17,7 @@ Route::post('login', [LoginController::class, 'login']);
 Route::post('logout', [LoginController::class, 'logout'])->name('logout');
 
 // Admin Routes (Protected)
-Route::group(['prefix' => 'admin', 'as' => 'admin.', 'middleware' => 'auth'], function () {
+Route::group(['prefix' => 'admin', 'as' => 'admin.', 'middleware' => 'auth:web'], function () {
     Route::get('dashboard', [DashboardController::class, 'index'])->name('dashboard');
     
     // Users crud
