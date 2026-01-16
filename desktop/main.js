@@ -1,8 +1,28 @@
-const { app, BrowserWindow, Tray, Menu, nativeImage } = require('electron');
+const { app, BrowserWindow, Tray, Menu, nativeImage, ipcMain } = require('electron');
 const path = require('path');
 
 let mainWindow = null;
 let tray = null;
+
+ipcMain.on('hide-window', () => {
+  console.log('[IPC] Recibido: hide-window');
+  if (mainWindow) {
+    mainWindow.hide();
+  } else {
+    console.error('[IPC] hide-window: mainWindow es null');
+  }
+});
+
+ipcMain.on('toggle-window', () => {
+  console.log('[IPC] Recibido: toggle-window');
+  toggleWindow();
+});
+
+ipcMain.on('quit-app', () => {
+  console.log('[IPC] Recibido: quit-app');
+  app.isQuitting = true;
+  app.quit();
+});
 
 function createWindow() {
   const isDev = !app.isPackaged;
@@ -21,11 +41,11 @@ function createWindow() {
     x: screenWidth - windowWidth - margin,
     y: margin,
     show: false,
-    frame: false, // Cambiado a true para que tenga barra de título y se pueda mover
+    frame: false,
     fullscreenable: false,
     resizable: false,
-    transparent: false,
-    alwaysOnTop: true, // Siempre visible encima de otras ventanas
+    transparent: true, // Habilitar transparencia
+    alwaysOnTop: true,
     autoHideMenuBar: true,
     webPreferences: {
       nodeIntegration: false,
@@ -37,16 +57,18 @@ function createWindow() {
   // Cargar la aplicación React
   if (isDev) {
     mainWindow.loadURL('http://127.0.0.1:3001/');
-    // Esperar a que la página cargue antes de abrir DevTools
-    mainWindow.webContents.once('did-finish-load', () => {
-      mainWindow.webContents.openDevTools({ mode: 'detach' });
-    });
+    // DevTools desactivadas por defecto según requerimiento de UX
+    // mainWindow.webContents.openDevTools({ mode: 'detach' });
   } else {
     mainWindow.loadFile(path.join(__dirname, 'dist/renderer/index.html'));
   }
 
   // Al hacer clic en X, solo ocultar la ventana (no cerrar la app)
   mainWindow.on('close', (event) => {
+    // Si la app se está cerrando realmente (app.quit), no prevenimos
+    if (app.isQuitting) {
+      return;
+    }
     event.preventDefault();
     mainWindow?.hide();
   });

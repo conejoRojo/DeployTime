@@ -29,6 +29,7 @@ class ProjectController extends Controller
             'description' => 'nullable|string',
         ]);
 
+        $validated['created_by'] = Auth::id();
         Project::create($validated);
 
         return redirect()->route('admin.projects.index')->with('success', 'Proyecto creado correctamente.');
@@ -36,7 +37,7 @@ class ProjectController extends Controller
 
     public function show(Project $project)
     {
-        $project->load(['tasks.assignedTo', 'tasks.creator']);
+        $project->load(['tasks.assignedUsers', 'tasks.creator']);
         $users = User::all(); // For assignment dropdown
         return view('admin.projects.show', compact('project', 'users'));
     }
@@ -66,19 +67,35 @@ class ProjectController extends Controller
             'name' => 'required|string|max:255',
             'description' => 'nullable|string',
             'estimated_hours' => 'nullable|numeric',
-            'assigned_to' => 'nullable|exists:users,id',
+            'assigned_users' => 'nullable|array',
+            'assigned_users.*' => 'exists:users,id',
         ]);
 
-        $project->tasks()->create([
+        $task = $project->tasks()->create([
             'name' => $validated['name'],
-            'description' => $validated['description'],
-            'estimated_hours' => $validated['estimated_hours'],
-            'assigned_to' => $validated['assigned_to'],
+            'description' => $request->description,
+            'estimated_hours' => $request->estimated_hours,
             'created_by' => Auth::id(),
             'status' => 'pending'
         ]);
 
+        if ($request->has('assigned_users')) {
+            $task->assignedUsers()->sync($request->assigned_users);
+        }
+
         return redirect()->route('admin.projects.show', $project)->with('success', 'Tarea creada y asignada.');
+    }
+
+    public function updateTask(Request $request, Task $task)
+    {
+        $validated = $request->validate([
+            'assigned_users' => 'nullable|array',
+            'assigned_users.*' => 'exists:users,id',
+        ]);
+
+        $task->assignedUsers()->sync($request->assigned_users ?? []);
+
+        return redirect()->back()->with('success', 'Tarea actualizada correctamente.');
     }
 
     public function destroyTask(Task $task)
