@@ -41,6 +41,11 @@ class Task extends Model
         return $this->belongsTo(User::class, 'assigned_to');
     }
 
+    public function assignedUsers()
+    {
+        return $this->belongsToMany(User::class, 'task_assignments');
+    }
+
     public function timeEntries()
     {
         return $this->hasMany(TimeEntry::class);

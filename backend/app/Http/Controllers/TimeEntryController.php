@@ -21,9 +21,14 @@ class TimeEntryController extends Controller
             return response()->json(['error' => 'Tarea no encontrada'], 404);
         }
 
-        // Verificar acceso al proyecto
-        if (!$user->isAdmin() && !$task->project->collaborators->contains($user->id)) {
-            return response()->json(['error' => 'No tienes acceso a esta tarea'], 403);
+        // Verificar acceso al proyecto (colaborador o asignado a la tarea)
+        if (!$user->isAdmin()) {
+            $isCollaborator = $task->project->collaborators->contains($user->id);
+            $isAssigned = $task->assignedUsers->contains($user->id);
+
+            if (!$isCollaborator && !$isAssigned) {
+                return response()->json(['error' => 'No tienes acceso a esta tarea'], 403);
+            }
         }
 
         $entries = TimeEntry::where('task_id', $taskId)
@@ -71,9 +76,14 @@ class TimeEntryController extends Controller
         $user = auth()->user();
         $task = Task::with('project')->find($request->task_id);
 
-        // Verificar acceso al proyecto
-        if (!$user->isAdmin() && !$task->project->collaborators->contains($user->id)) {
-            return response()->json(['error' => 'No tienes acceso a este proyecto'], 403);
+        // Verificar acceso al proyecto (colaborador o asignado a la tarea)
+        if (!$user->isAdmin()) {
+            $isCollaborator = $task->project->collaborators->contains($user->id);
+            $isAssigned = $task->assignedUsers->contains($user->id);
+
+            if (!$isCollaborator && !$isAssigned) {
+                return response()->json(['error' => 'No tienes acceso a este proyecto'], 403);
+            }
         }
 
         // Verificar si hay una entrada de tiempo activa

@@ -21,14 +21,17 @@ class TaskController extends Controller
             return response()->json(['error' => 'Proyecto no encontrado'], 404);
         }
 
-        // Verificar acceso al proyecto
-        if (!$user->isAdmin() && !$project->collaborators->contains($user->id)) {
-            return response()->json(['error' => 'No tienes acceso a este proyecto'], 403);
+        $query = Task::where('project_id', $projectId)
+            ->with(['creator', 'timeEntries', 'assignedUsers']);
+
+        if (!$user->isAdmin()) {
+            // Colaborador solo ve sus tareas asignadas
+            $query->whereHas('assignedUsers', function ($q) use ($user) {
+                $q->where('user_id', $user->id);
+            });
         }
 
-        $tasks = Task::where('project_id', $projectId)
-            ->with(['creator', 'timeEntries'])
-            ->get();
+        $tasks = $query->get();
 
         return response()->json($tasks);
     }
@@ -39,15 +42,19 @@ class TaskController extends Controller
     public function show($id)
     {
         $user = auth()->user();
-        $task = Task::with(['project', 'creator', 'timeEntries'])->find($id);
+        $task = Task::with(['project', 'creator', 'timeEntries', 'assignedUsers'])->find($id);
 
         if (!$task) {
             return response()->json(['error' => 'Tarea no encontrada'], 404);
         }
 
-        // Verificar acceso al proyecto de la tarea
-        if (!$user->isAdmin() && !$task->project->collaborators->contains($user->id)) {
-            return response()->json(['error' => 'No tienes acceso a esta tarea'], 403);
+        // Verificar acceso (admin o asignado)
+        if (!$user->isAdmin()) {
+            $isAssigned = $task->assignedUsers->contains($user->id);
+
+            if (!$isAssigned) {
+                return response()->json(['error' => 'No tienes acceso a esta tarea'], 403);
+            }
         }
 
         return response()->json($task);
@@ -64,6 +71,8 @@ class TaskController extends Controller
             'description' => 'nullable|string',
             'estimated_hours' => 'nullable|numeric|min:0',
             'status' => 'nullable|in:pending,in_progress,completed',
+            'assigned_users' => 'nullable|array',
+            'assigned_users.*' => 'exists:users,id',
         ]);
 
         if ($validator->fails()) {
@@ -73,9 +82,16 @@ class TaskController extends Controller
         $user = auth()->user();
         $project = Project::find($request->project_id);
 
-        // Verificar que el usuario tenga acceso al proyecto
-        if (!$user->isAdmin() && !$project->collaborators->contains($user->id)) {
-            return response()->json(['error' => 'No tienes acceso a este proyecto'], 403);
+        // Verificar que el usuario tenga acceso al proyecto (colaborador o tiene tareas asignadas)
+        if (!$user->isAdmin()) {
+            $isCollaborator = $project->collaborators->contains($user->id);
+            $hasAssignedTask = $project->tasks()->whereHas('assignedUsers', function ($q) use ($user) {
+                $q->where('user_id', $user->id);
+            })->exists();
+
+            if (!$isCollaborator && !$hasAssignedTask) {
+                return response()->json(['error' => 'No tienes acceso a este proyecto'], 403);
+            }
         }
 
         $task = Task::create([
@@ -87,7 +103,16 @@ class TaskController extends Controller
             'created_by' => auth()->id(),
         ]);
 
-        return response()->json($task->load(['project', 'creator']), 201);
+        // Manejar asignaciones
+        if ($request->has('assigned_users')) {
+            $task->assignedUsers()->sync($request->assigned_users);
+        } else if (!$user->isAdmin()) {
+            // Si un colaborador crea una tarea y no asigna a nadie, se la auto-asigna
+            // para asegurar que pueda verla (según las reglas de filtrado anteriores)
+            $task->assignedUsers()->sync([$user->id]);
+        }
+
+        return response()->json($task->load(['project', 'creator', 'assignedUsers']), 201);
     }
 
     /**
@@ -102,9 +127,13 @@ class TaskController extends Controller
             return response()->json(['error' => 'Tarea no encontrada'], 404);
         }
 
-        // Verificar acceso
-        if (!$user->isAdmin() && !$task->project->collaborators->contains($user->id)) {
-            return response()->json(['error' => 'No tienes acceso a esta tarea'], 403);
+        // Verificar acceso (admin o asignado)
+        if (!$user->isAdmin()) {
+            $isAssigned = $task->assignedUsers->contains($user->id);
+
+            if (!$isAssigned) {
+                return response()->json(['error' => 'No tienes acceso a esta tarea'], 403);
+            }
         }
 
         $validator = Validator::make($request->all(), [
@@ -112,6 +141,8 @@ class TaskController extends Controller
             'description' => 'nullable|string',
             'estimated_hours' => 'nullable|numeric|min:0',
             'status' => 'nullable|in:pending,in_progress,completed',
+            'assigned_users' => 'nullable|array',
+            'assigned_users.*' => 'exists:users,id',
         ]);
 
         if ($validator->fails()) {
@@ -120,7 +151,11 @@ class TaskController extends Controller
 
         $task->update($request->only(['name', 'description', 'estimated_hours', 'status']));
 
-        return response()->json($task->load(['project', 'creator']));
+        if ($request->has('assigned_users')) {
+            $task->assignedUsers()->sync($request->assigned_users);
+        }
+
+        return response()->json($task->load(['project', 'creator', 'assignedUsers']));
     }
 
     /**

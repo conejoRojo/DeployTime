@@ -20,8 +20,12 @@ class ProjectController extends Controller
             // Admin ve todos los proyectos
             $projects = Project::with(['creator', 'collaborators'])->get();
         } else {
-            // Colaborador solo ve sus proyectos
-            $projects = $user->projects()->with(['creator', 'collaborators'])->get();
+            // Colaborador ve proyectos donde es colaborador O tiene tareas asignadas
+            $projects = Project::whereHas('collaborators', function ($query) use ($user) {
+                $query->where('user_id', $user->id);
+            })->orWhereHas('tasks.assignedUsers', function ($query) use ($user) {
+                $query->where('user_id', $user->id);
+            })->with(['creator', 'collaborators'])->get();
         }
 
         return response()->json($projects);
@@ -33,15 +37,22 @@ class ProjectController extends Controller
     public function show($id)
     {
         $user = auth()->user();
-        $project = Project::with(['creator', 'collaborators', 'tasks'])->find($id);
+        $project = Project::with(['creator', 'collaborators', 'tasks.assignedUsers'])->find($id);
 
         if (!$project) {
             return response()->json(['error' => 'Proyecto no encontrado'], 404);
         }
 
         // Verificar que el usuario tenga acceso al proyecto
-        if (!$user->isAdmin() && !$project->collaborators->contains($user->id)) {
-            return response()->json(['error' => 'No tienes acceso a este proyecto'], 403);
+        if (!$user->isAdmin()) {
+            $isCollaborator = $project->collaborators->contains($user->id);
+            $hasTask = $project->tasks()->whereHas('assignedUsers', function ($q) use ($user) {
+                $q->where('user_id', $user->id);
+            })->exists();
+
+            if (!$isCollaborator && !$hasTask) {
+                return response()->json(['error' => 'No tienes acceso a este proyecto'], 403);
+            }
         }
 
         return response()->json($project);

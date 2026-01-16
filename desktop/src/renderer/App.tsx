@@ -37,14 +37,26 @@ function App() {
   const [showSettings, setShowSettings] = useState(false);
   // Aviso configurable del Timer (minutos)
   const [warningMinutes, setWarningMinutes] = useState<number>(() => Number(localStorage.getItem('warning_minutes') || '120'));
-  const [hasWarned, setHasWarned] = useState(false);
+  const [lastWarnedCycle, setLastWarnedCycle] = useState(0); // Ciclo de aviso actual (1 para 120m, 2 para 240m, etc)
   const [warning, setWarning] = useState<string | null>(null);
   const [showWarningModal, setShowWarningModal] = useState(false);
 
   // Email y password para el formulario
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [apiUrl, setApiUrl] = useState(() => api.getBaseUrl());
+  const [showUrlModal, setShowUrlModal] = useState(() => !localStorage.getItem('api_url'));
   const isPaused = !activeTimer && selectedTask !== null && accumulatedTime > 0;
+
+  const handleUrlUpdate = () => {
+    if (!apiUrl.trim()) return;
+    api.updateBaseUrl(apiUrl);
+    setShowUrlModal(false);
+    // Forzar recarga si ya estábamos logueados (opcional)
+    if (isLoggedIn) {
+      loadInitialData();
+    }
+  };
 
   const currentTask = (activeTimer?.task as Task | undefined) || tasks.find((t) => t.id === (activeTimer?.task_id || selectedTask));
 
@@ -135,49 +147,40 @@ function App() {
   }, [isLoggedIn]);                                              // ejecuta este efecto sólo cuando cambia isLoggedIn (login / logout)
 
 
-    // Timer update - tiempo acumulado (todas las sesiones previas) + sesión actual
+  // Timer update - tiempo acumulado (todas las sesiones previas) + sesión actual
   useEffect(() => { // Declara un efecto que se ejecuta cuando cambia el timer activo o el tiempo acumulado
-    if (!activeTimer || !activeTimer.start_time) return; // Si no hay timer activo o no tiene start_time, no hace nada
+    if (!activeTimer || !activeTimer.start_time) return;
 
-    const interval = setInterval(() => { // Crea un intervalo que se ejecuta cada segundo
-      const start = new Date(activeTimer.start_time).getTime(); // Convierte la fecha de inicio del timer a milisegundos
-      const now = Date.now(); // Obtiene la marca de tiempo actual en milisegundos
-      const currentSession = Math.floor((now - start) / 1000); // Calcula los segundos de la sesión actual
-      const total = accumulatedTime + currentSession; // Suma el tiempo acumulado previo + la sesión actual
+    const interval = setInterval(() => {
+      const start = new Date(activeTimer.start_time).getTime();
+      const now = Date.now();
+      const currentSession = Math.floor((now - start) / 1000);
+      const total = accumulatedTime + currentSession;
 
-      setElapsedTime(formatSecondsToTime(total)); // Actualiza el string mostrado del cronómetro usando el helper
-    }, 1000); // Ejecuta el intervalo cada 1000 ms (1 segundo)
+      setElapsedTime(formatSecondsToTime(total));
 
-    return () => { // Función de limpieza del efecto
-      clearInterval(interval); // Limpia el intervalo cuando cambia activeTimer/accumulatedTime o se desmonta el componente
-    }; // Fin de la limpieza
-    return () => clearInterval(interval);
-  }, [activeTimer, accumulatedTime]); // El efecto depende del timer activo y del tiempo acumulado
+      // Chequeo de tiempo límite (Warning)
+      const currentCycle = Math.floor(total / (warningMinutes * 60));
+      if (currentCycle > lastWarnedCycle && currentCycle > 0) {
+        setLastWarnedCycle(currentCycle);
+        setShowWarningModal(true);
+      }
+    }, 1000);
+
+    return () => {
+      clearInterval(interval);
+    };
+  }, [activeTimer, accumulatedTime, warningMinutes, lastWarnedCycle]); // El efecto depende de estos valores
 
   // Resetear warning cuando cambia el activeTimer (nueva sesión)
   useEffect(() => {
     if (activeTimer) {
-      setHasWarned(false);
+      setLastWarnedCycle(Math.floor(accumulatedTime / (warningMinutes * 60)));
       setShowWarningModal(false);
     }
-  }, [activeTimer?.id]);
+  }, [activeTimer?.id, warningMinutes]);
 
-  // Chequeo de tiempo límite
-  useEffect(() => {
-    if (!activeTimer || !activeTimer.start_time) return;
-
-    // Calcular total actual
-    const start = new Date(activeTimer.start_time).getTime();
-    const now = Date.now();
-    const currentSession = Math.floor((now - start) / 1000);
-    const total = accumulatedTime + currentSession;
-
-    if (!hasWarned && total >= warningMinutes * 60) {
-      setHasWarned(true);
-      setShowWarningModal(true); 
-      // Notificaciones nativas desactivadas por solicitud del usuario
-    }
-  }, [activeTimer, accumulatedTime, warningMinutes, hasWarned]);
+  // Chequeo de tiempo límite (removido de useEffect porque ahora está en el intervalo)
 
 
   // Verificar si hay sesión guardada al iniciar
@@ -275,7 +278,7 @@ function App() {
 
     try {
       const response = await api.login(email, password);
-      
+
       setUser(response.user);
       setIsLoggedIn(true);
 
@@ -323,65 +326,65 @@ function App() {
   };
 
   const handleCreateProject = async () => { // Maneja la creación de un proyecto nuevo
-  if (!newProjectName.trim()) { // Si el nombre está vacío
-    alert('El nombre del proyecto es obligatorio'); // Muestra alerta al usuario
-    return; // Sale de la función sin intentar crear el proyecto
-  }
+    if (!newProjectName.trim()) { // Si el nombre está vacío
+      alert('El nombre del proyecto es obligatorio'); // Muestra alerta al usuario
+      return; // Sale de la función sin intentar crear el proyecto
+    }
 
-  setLoading(true); // Activa el estado de carga
-  setError(null); // Limpia errores previos
+    setLoading(true); // Activa el estado de carga
+    setError(null); // Limpia errores previos
 
-  try { // Bloque try/catch para manejar errores
-    const project = await api.createProject({
-      name: newProjectName, // Usa el nombre ingresado
-      description: newProjectDescription || '' // Usa la descripción o cadena vacía
-    }); // Llama a la API para crear el proyecto
+    try { // Bloque try/catch para manejar errores
+      const project = await api.createProject({
+        name: newProjectName, // Usa el nombre ingresado
+        description: newProjectDescription || '' // Usa la descripción o cadena vacía
+      }); // Llama a la API para crear el proyecto
 
-    setProjects([...projects, project]); // Agrega el nuevo proyecto a la lista de proyectos en estado
-    setNewProjectName(''); // Limpia el nombre ingresado
-    setNewProjectDescription(''); // Limpia la descripción ingresada
-    setSelectedProject(project.id); // Selecciona automáticamente el proyecto recién creado
-    await handleProjectChange(project.id); // Carga las tareas del nuevo proyecto
-  } catch (err: any) { // Captura errores de la API
-    console.error('Error al crear proyecto:', err); // Loguea el error en consola
-    setError(err.response?.data?.error || 'Error al crear proyecto'); // Muestra mensaje descriptivo en la UI
-  } finally { // Bloque que siempre se ejecuta
-    setLoading(false); // Quita el estado de carga
-  } // Fin del finally
-}; // Fin de handleCreateProject
+      setProjects([...projects, project]); // Agrega el nuevo proyecto a la lista de proyectos en estado
+      setNewProjectName(''); // Limpia el nombre ingresado
+      setNewProjectDescription(''); // Limpia la descripción ingresada
+      setSelectedProject(project.id); // Selecciona automáticamente el proyecto recién creado
+      await handleProjectChange(project.id); // Carga las tareas del nuevo proyecto
+    } catch (err: any) { // Captura errores de la API
+      console.error('Error al crear proyecto:', err); // Loguea el error en consola
+      setError(err.response?.data?.error || 'Error al crear proyecto'); // Muestra mensaje descriptivo en la UI
+    } finally { // Bloque que siempre se ejecuta
+      setLoading(false); // Quita el estado de carga
+    } // Fin del finally
+  }; // Fin de handleCreateProject
 
-const handleCreateTask = async () => { // Maneja la creación de una tarea dentro de un proyecto
-  if (!selectedProject) { // Si no hay proyecto seleccionado
-    alert('Seleccioná un proyecto primero'); // Muestra alerta al usuario
-    return; // Sale de la función
-  }
-  if (!newTaskName.trim()) { // Si el nombre de la tarea está vacío
-    alert('El nombre de la tarea es obligatorio'); // Alerta informativa
-    return; // Sale de la función
-  }
+  const handleCreateTask = async () => { // Maneja la creación de una tarea dentro de un proyecto
+    if (!selectedProject) { // Si no hay proyecto seleccionado
+      alert('Seleccioná un proyecto primero'); // Muestra alerta al usuario
+      return; // Sale de la función
+    }
+    if (!newTaskName.trim()) { // Si el nombre de la tarea está vacío
+      alert('El nombre de la tarea es obligatorio'); // Alerta informativa
+      return; // Sale de la función
+    }
 
-  setLoading(true); // Activa estado de carga
-  setError(null); // Limpia errores previos
+    setLoading(true); // Activa estado de carga
+    setError(null); // Limpia errores previos
 
-  try { // Bloque try/catch para manejar errores de API
-    const task = await api.createTask({
-      project_id: selectedProject, // Asigna la tarea al proyecto seleccionado
-      name: newTaskName, // Usa el nombre ingresado
-      description: newTaskDescription || '', // Usa la descripción o cadena vacía
-      estimated_hours: newTaskEstimatedHours // Asigna horas estimadas si existen
-    }); // Llama a la API para crear la tarea
+    try { // Bloque try/catch para manejar errores de API
+      const task = await api.createTask({
+        project_id: selectedProject, // Asigna la tarea al proyecto seleccionado
+        name: newTaskName, // Usa el nombre ingresado
+        description: newTaskDescription || '', // Usa la descripción o cadena vacía
+        estimated_hours: newTaskEstimatedHours // Asigna horas estimadas si existen
+      }); // Llama a la API para crear la tarea
 
-    setTasks([...tasks, task]); // Agrega la nueva tarea al estado
-    setNewTaskName(''); // Limpia el campo nombre
-    setNewTaskDescription(''); // Limpia el campo descripción
-    setNewTaskEstimatedHours(undefined); // Limpia las horas estimadas
-  } catch (err: any) { // Captura errores de la API
-    console.error('Error al crear tarea:', err); // Loguea el error
-    setError(err.response?.data?.error || 'Error al crear tarea'); // Muestra mensaje descriptivo al usuario
-  } finally { // Bloque que siempre se ejecuta
-    setLoading(false); // Quita estado de carga
-  } // Fin del finally
-}; // Fin de handleCreateTask
+      setTasks([...tasks, task]); // Agrega la nueva tarea al estado
+      setNewTaskName(''); // Limpia el campo nombre
+      setNewTaskDescription(''); // Limpia el campo descripción
+      setNewTaskEstimatedHours(undefined); // Limpia las horas estimadas
+    } catch (err: any) { // Captura errores de la API
+      console.error('Error al crear tarea:', err); // Loguea el error
+      setError(err.response?.data?.error || 'Error al crear tarea'); // Muestra mensaje descriptivo al usuario
+    } finally { // Bloque que siempre se ejecuta
+      setLoading(false); // Quita estado de carga
+    } // Fin del finally
+  }; // Fin de handleCreateTask
 
   // Iniciar timer
   const handleStartTimer = async () => {
@@ -397,7 +400,7 @@ const handleCreateTask = async () => { // Maneja la creación de una tarea dentr
 
       const entry = await api.startTimer(selectedTask, 'Iniciando trabajo');
       setActiveTimer(entry);
-      setHasWarned(false); // reset warning when starting a new timer
+      setLastWarnedCycle(Math.floor(accumulatedTime / (warningMinutes * 60)));
 
       // Inicializar con el tiempo acumulado previo
       setAccumulatedTime(accumulated);
@@ -412,7 +415,7 @@ const handleCreateTask = async () => { // Maneja la creación de una tarea dentr
     }
   };
 
-    // Pausar = detener la sesión actual, pero mantener tarea y tiempo en pantalla
+  // Pausar = detener la sesión actual, pero mantener tarea y tiempo en pantalla
   const handlePauseTimer = async () => { // Declara la función que maneja el botón de Pausa
     if (!activeTimer || !activeTimer.start_time) return; // Si no hay timer activo o no tiene hora de inicio, sale sin hacer nada
 
@@ -500,156 +503,207 @@ const handleCreateTask = async () => { // Maneja la creación de una tarea dentr
               className="btn-start"                                   // la clase que ya usás para estilo
               disabled={loading || !email || !password}               // se deshabilita si está cargando o faltan datos
             >
-              {loading ? 'Ingresando...' : 'Iniciar sesión'}         
+              {loading ? 'Ingresando...' : 'Iniciar sesión'}
             </button>
           </form>
           {/* <div className="login-hint">
             <small>Usuario de prueba: juan@deploytime.com / colaborador123</small>
           </div> */}
         </div>
+
+        {/* Modal de URL Inicial */}
+        {showUrlModal && (
+          <div className="modal-overlay">
+            <div className="modal-content">
+              <h3>🌐 Configurar Servidor</h3>
+              <p>Ingresa la URL del servidor para comenzar.</p>
+              <input
+                className="form-field"
+                type="text"
+                placeholder="https://api.tu-servidor.com"
+                value={apiUrl}
+                onChange={(e) => setApiUrl(e.target.value)}
+                style={{ marginBottom: '20px', textAlign: 'center' }}
+              />
+              <div className="modal-actions">
+                <button className="modal-btn pause" onClick={handleUrlUpdate}>
+                  Guardar y Continuar
+                </button>
+                <button className="modal-btn continue" onClick={() => {
+                  const local = 'http://localhost:8000/api';
+                  setApiUrl(local);
+                  api.updateBaseUrl(local);
+                  setShowUrlModal(false);
+                }}>
+                  Usar Localhost
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
       </div>
     );
   }
   if (showSettings) {
-          return (
-            <div className="app">
-              <div className="header">
-                <h2>Configuración</h2>
-                <button className="btn-logout" onClick={() => setShowSettings(false)}>
-                  🔙
-                </button>
-              </div>
+    return (
+      <div className="app">
+        <div className="header">
+          <h2>Configuración</h2>
+          <button className="btn-logout" onClick={() => setShowSettings(false)}>
+            🔙
+          </button>
+        </div>
 
-              <div className="content settings-view">
+        <div className="content settings-view">
 
-                {/* Crear Proyecto (solo admin) */}
-                {user?.role === 'admin' && (
-                  <div className="create-box">
-                    <h4>Crear nuevo proyecto</h4>
+          {/* Crear Proyecto (solo admin) */}
+          {user?.role === 'admin' && (
+            <div className="create-box">
+              <h4>Crear nuevo proyecto</h4>
 
-                    <input className="form-field"
-                      type="text"
-                      placeholder="Nombre del proyecto"
-                      value={newProjectName}
-                      onChange={(e) => setNewProjectName(e.target.value)}
-                      disabled={loading}
-                    />
+              <input className="form-field"
+                type="text"
+                placeholder="Nombre del proyecto"
+                value={newProjectName}
+                onChange={(e) => setNewProjectName(e.target.value)}
+                disabled={loading}
+              />
 
-                    <textarea className="form-field"
-                      placeholder="Descripción (opcional)"
-                      value={newProjectDescription}
-                      onChange={(e) => setNewProjectDescription(e.target.value)}
-                      disabled={loading}
-                    />
+              <textarea className="form-field"
+                placeholder="Descripción (opcional)"
+                value={newProjectDescription}
+                onChange={(e) => setNewProjectDescription(e.target.value)}
+                disabled={loading}
+              />
 
-                    <button
-                      className="btn-start"
-                      onClick={handleCreateProject}
-                      disabled={loading || !newProjectName.trim()}
-                    >
-                      Crear Proyecto
-                    </button>
-                  </div>
-                )}
-
-                {/* Aviso del Timer (para todos) */}
-                <div className="create-box">
-                  <h4>Aviso del Timer (minutos)</h4>
-
-                  <input className="form-field"
-                    type="number"
-                    min={1}
-                    value={warningMinutes}
-                    onChange={(e) => setWarningMinutes(Number(e.target.value))}
-                    disabled={loading}
-                  />
-
-                  <div className="btn-row">
-                    <button
-                      className="btn-start"
-                      onClick={() => {
-                        localStorage.setItem('warning_minutes', String(warningMinutes));
-                        setHasWarned(false);
-                        setWarning(null);
-                      }}
-                      disabled={loading}
-                    >
-                      Guardar aviso
-                    </button>
-
-                    <button
-                      className="btn-start"
-                      onClick={() => {
-                        setWarningMinutes(120);
-                        localStorage.setItem('warning_minutes', '120');
-                        setHasWarned(false);
-                        setWarning(null);
-                      }}
-                      disabled={loading}
-                    >
-                      Restablecer
-                    </button>
-                  </div>
-
-                  <small>Al superar este tiempo, la app te preguntará qué hacer.</small>
-                </div>
-
-                {/* Crear Tarea */}
-                <div className="create-box">
-                  <h4>Crear nueva tarea</h4>
-
-                  <select className="form-field"
-                    value={selectedProject || ''}
-                    onChange={(e) => handleProjectChange(Number(e.target.value))}
-                    disabled={loading}
-                  >
-                    <option value="">Selecciona un proyecto</option>
-                    {projects.map((p) => (
-                      <option key={p.id} value={p.id}>
-                        {p.name}
-                      </option>
-                    ))}
-                  </select>
-
-                  <input className="form-field"
-                    type="text"
-                    placeholder="Nombre de la tarea"
-                    value={newTaskName}
-                    onChange={(e) => setNewTaskName(e.target.value)}
-                    disabled={loading}
-                  />
-
-                  <textarea className="form-field"
-                    placeholder="Descripción"
-                    value={newTaskDescription}
-                    onChange={(e) => setNewTaskDescription(e.target.value)}
-                    disabled={loading}
-                  />
-
-                  <input className="form-field"
-                    type="number"
-                    placeholder="Horas estimadas"
-                    value={newTaskEstimatedHours ?? ''}
-                    onChange={(e) =>
-                      setNewTaskEstimatedHours(
-                        e.target.value ? Number(e.target.value) : undefined
-                      )
-                    }
-                    disabled={loading}
-                  />
-
-                  <button
-                    className="btn-start"
-                    onClick={handleCreateTask}
-                    disabled={loading || !newTaskName.trim() || !selectedProject}
-                  >
-                    Crear Tarea
-                  </button>
-                </div>
-              </div>
+              <button
+                className="btn-start"
+                onClick={handleCreateProject}
+                disabled={loading || !newProjectName.trim()}
+              >
+                Crear Proyecto
+              </button>
             </div>
-          );
-        }
+          )}
+
+          {/* Aviso del Timer (para todos) */}
+          <div className="create-box">
+            <h4>Aviso del Timer (minutos)</h4>
+
+            <input className="form-field"
+              type="number"
+              min={1}
+              value={warningMinutes}
+              onChange={(e) => setWarningMinutes(Number(e.target.value))}
+              disabled={loading}
+            />
+
+            <div className="btn-row">
+              <button
+                className="btn-start"
+                onClick={() => {
+                  localStorage.setItem('warning_minutes', String(warningMinutes));
+                  setLastWarnedCycle(0);
+                  setWarning(null);
+                }}
+                disabled={loading}
+              >
+                Guardar aviso
+              </button>
+
+              <button
+                className="btn-start"
+                onClick={() => {
+                  setWarningMinutes(120);
+                  localStorage.setItem('warning_minutes', '120');
+                  setLastWarnedCycle(0);
+                  setWarning(null);
+                }}
+                disabled={loading}
+              >
+                Restablecer
+              </button>
+            </div>
+
+            <small>Al superar este tiempo, la app te preguntará qué hacer.</small>
+          </div>
+
+          {/* Configuración de Servidor URL */}
+          <div className="create-box">
+            <h4>Servidor API (URL)</h4>
+            <input className="form-field"
+              type="text"
+              placeholder="http://tu-servidor.com"
+              value={apiUrl}
+              onChange={(e) => setApiUrl(e.target.value)}
+              disabled={loading}
+            />
+            <button
+              className="btn-start"
+              onClick={handleUrlUpdate}
+              disabled={loading || !apiUrl.trim()}
+            >
+              Actualizar URL
+            </button>
+            <small>URL actual: {api.getBaseUrl()}</small>
+          </div>
+
+          {/* Crear Tarea */}
+          <div className="create-box">
+            <h4>Crear nueva tarea</h4>
+
+            <select className="form-field"
+              value={selectedProject || ''}
+              onChange={(e) => handleProjectChange(Number(e.target.value))}
+              disabled={loading}
+            >
+              <option value="">Selecciona un proyecto</option>
+              {projects.map((p) => (
+                <option key={p.id} value={p.id}>
+                  {p.name}
+                </option>
+              ))}
+            </select>
+
+            <input className="form-field"
+              type="text"
+              placeholder="Nombre de la tarea"
+              value={newTaskName}
+              onChange={(e) => setNewTaskName(e.target.value)}
+              disabled={loading}
+            />
+
+            <textarea className="form-field"
+              placeholder="Descripción"
+              value={newTaskDescription}
+              onChange={(e) => setNewTaskDescription(e.target.value)}
+              disabled={loading}
+            />
+
+            <input className="form-field"
+              type="number"
+              placeholder="Horas estimadas"
+              value={newTaskEstimatedHours ?? ''}
+              onChange={(e) =>
+                setNewTaskEstimatedHours(
+                  e.target.value ? Number(e.target.value) : undefined
+                )
+              }
+              disabled={loading}
+            />
+
+            <button
+              className="btn-start"
+              onClick={handleCreateTask}
+              disabled={loading || !newTaskName.trim() || !selectedProject}
+            >
+              Crear Tarea
+            </button>
+          </div>
+        </div>
+      </div>
+    );
+  }
   // Pantalla principal
   return (
     <div className="app">
@@ -662,14 +716,26 @@ const handleCreateTask = async () => { // Maneja la creación de una tarea dentr
           ⚙️
         </button>
         <h2>DeployTime</h2>
-        <button
-          className="btn-logout header-icon"
-          onClick={handleLogout}
-          title="Cerrar sesión"
-        >
-          ✕
-        </button>
-
+        <div className="header-actions">
+          <button
+            className="btn-logout header-icon"
+            onClick={handleLogout}
+            title="Cerrar sesión"
+          >
+            👤
+          </button>
+          <button
+            className="btn-logout header-icon"
+            onClick={() => {
+              if (window.electronAPI && window.electronAPI.toggleWindow) {
+                window.electronAPI.toggleWindow();
+              }
+            }}
+            title="Esconder"
+          >
+            X
+          </button>
+        </div>
       </div>
 
       {error && <div className="error-banner">{error}</div>}
@@ -678,116 +744,116 @@ const handleCreateTask = async () => { // Maneja la creación de una tarea dentr
         {loading && !activeTimer && <div className="loading">Cargando...</div>}
 
         {activeTimer || isPaused ? (
-  <div className="timer-active">
-    <div className="timer-info">
-      <div className="project-name">
-        {(() => {
-          const task =
-            activeTimer?.task || tasks.find((t) => t.id === (activeTimer?.task_id || selectedTask));
-          const project = task ? projects.find((p) => p.id === task.project_id) : null;
-          return project?.name || 'Proyecto';
-        })()}
-      </div>
+          <div className="timer-active">
+            <div className="timer-info">
+              <div className="project-name">
+                {(() => {
+                  const task =
+                    activeTimer?.task || tasks.find((t) => t.id === (activeTimer?.task_id || selectedTask));
+                  const project = task ? projects.find((p) => p.id === task.project_id) : null;
+                  return project?.name || 'Proyecto';
+                })()}
+              </div>
 
-      <div className="task-name">
-        {activeTimer?.task?.name ||
-          tasks.find((t) => t.id === (activeTimer?.task_id || selectedTask))?.name ||
-          'Tarea'}
-      </div>
-    </div>
+              <div className="task-name">
+                {activeTimer?.task?.name ||
+                  tasks.find((t) => t.id === (activeTimer?.task_id || selectedTask))?.name ||
+                  'Tarea'}
+              </div>
+            </div>
 
-    <div className="timer-display">{elapsedTime}</div>
+            <div className="timer-display">{elapsedTime}</div>
 
-        <div className="task-info">
-      <p className="timer-start-time">
-        Creada:{' '}
-        {currentTask?.created_at
-          ? (() => {
-              const date = new Date(currentTask.created_at);
-              return `${date.toLocaleDateString('es-ES')} ${date.toLocaleTimeString('es-ES')}`;
-            })()
-          : 'N/A'}
-      </p>
+            <div className="task-info">
+              <p className="timer-start-time">
+                Creada:{' '}
+                {currentTask?.created_at
+                  ? (() => {
+                    const date = new Date(currentTask.created_at);
+                    return `${date.toLocaleDateString('es-ES')} ${date.toLocaleTimeString('es-ES')}`;
+                  })()
+                  : 'N/A'}
+              </p>
 
-      {currentTask?.estimated_hours != null && (
-        <p className="timer-start-time">
-          Tiempo estimado: {currentTask.estimated_hours} h
-        </p>
-      )}
-    </div>
+              {currentTask?.estimated_hours != null && (
+                <p className="timer-start-time">
+                  Tiempo estimado: {currentTask.estimated_hours} h
+                </p>
+              )}
+            </div>
 
 
-    <div className="timer-controls">
+            <div className="timer-controls">
 
-      {/* SI ESTÁ PAUSADO → MOSTRAR BOTÓN PLAY */}
-      {isPaused && (
-        <button className="btn-pause" onClick={handleStartTimer} disabled={loading}>
-          ▶️ Play
-        </button>
-      )}
+              {/* SI ESTÁ PAUSADO → MOSTRAR BOTÓN PLAY */}
+              {isPaused && (
+                <button className="btn-pause" onClick={handleStartTimer} disabled={loading}>
+                  Play
+                </button>
+              )}
 
-      {/* SI ESTÁ ACTIVO → MOSTRAR BOTÓN PAUSAR */}
-      {activeTimer && (
-        <button className="btn-pause" onClick={handlePauseTimer} disabled={loading}>
-          ⏸️ Pausar
-        </button>
-      )}
+              {/* SI ESTÁ ACTIVO → MOSTRAR BOTÓN PAUSAR */}
+              {activeTimer && (
+                <button className="btn-pause" onClick={handlePauseTimer} disabled={loading}>
+                  Pausar
+                </button>
+              )}
 
-      {/* STOP SIEMPRE DISPONIBLE EN AMBOS ESTADOS */}
-      <button className="btn-stop" onClick={handleStopTimer} disabled={loading}>
-        ⏹️ Stop
-      </button>
-    </div>
-  </div>
-) : (
-  // --- NO HAY TIMER ACTIVO, NI PAUSADO → MUESTRA FORM NORMAL ---
-  <div className="timer-idle">
-    <div className="select-group">
-      <label>Proyecto:</label>
-      <select
-        value={selectedProject || ''}
-        onChange={(e) => handleProjectChange(Number(e.target.value))}
-        disabled={loading}
-      >
-        <option value="">Selecciona un proyecto</option>
-        {projects.map((project) => (
-          <option key={project.id} value={project.id}>
-            {project.name}
-          </option>
-        ))}
-      </select>
-    </div>
-    
+              {/* STOP SIEMPRE DISPONIBLE EN AMBOS ESTADOS */}
+              <button className="btn-stop" onClick={handleStopTimer} disabled={loading}>
+                Stop
+              </button>
+            </div>
+          </div>
+        ) : (
+          // --- NO HAY TIMER ACTIVO, NI PAUSADO → MUESTRA FORM NORMAL ---
+          <div className="timer-idle">
+            <div className="select-group">
+              <label>Proyecto:</label>
+              <select
+                value={selectedProject || ''}
+                onChange={(e) => handleProjectChange(Number(e.target.value))}
+                disabled={loading}
+              >
+                <option value="">Selecciona un proyecto</option>
+                {projects.map((project) => (
+                  <option key={project.id} value={project.id}>
+                    {project.name}
+                  </option>
+                ))}
+              </select>
+            </div>
 
-    {selectedProject && (
-      <div className="select-group">
-        <label>Tarea:</label>
-        <select
-          value={selectedTask || ''}
-          onChange={(e) => setSelectedTask(Number(e.target.value))}
-          disabled={loading}
-        >
-          <option value="">Selecciona una tarea</option>
-          {tasks.map((task) => (
-            <option key={task.id} value={task.id}>
-              {task.name}
-            </option>
-          ))}
-        </select>
-      </div>
-    )}
-    
 
-    <button className="btn-start" onClick={handleStartTimer} disabled={!selectedTask || loading}>
-      {loading ? 'Iniciando...' : 'Iniciar Timer'}
-    </button>
-  </div>
-)}
+            {selectedProject && (
+              <div className="select-group">
+                <label>Tarea:</label>
+                <select
+                  value={selectedTask || ''}
+                  onChange={(e) => setSelectedTask(Number(e.target.value))}
+                  disabled={loading}
+                >
+                  <option value="">Selecciona una tarea</option>
+                  {tasks.map((task) => (
+                    <option key={task.id} value={task.id}>
+                      {task.name}
+                    </option>
+                  ))}
+                </select>
+              </div>
+            )}
+
+
+            <button className="btn-start" onClick={handleStartTimer} disabled={!selectedTask || loading}>
+              {loading ? 'Iniciando...' : 'Iniciar Timer'}
+            </button>
+          </div>
+        )}
 
       </div>
 
       <div className="footer">
-        <small>v1.0.0 - {user?.name} ({user?.role === 'admin' ? 'Admin' : 'Colaborador'})</small>
+        <small>v1.0.0 by Dixer.net - {user?.name} ({user?.role === 'admin' ? 'Admin' : 'Colaborador'})</small>
       </div>
 
       {/* Warning Modal */}
@@ -796,26 +862,26 @@ const handleCreateTask = async () => { // Maneja la creación de una tarea dentr
           <div className="modal-content">
             <h3>⚠️ Tiempo límite alcanzado</h3>
             <p>Has superado los {warningMinutes} minutos en esta tarea.</p>
-            
+
             <div className="modal-actions">
               <button className="modal-btn pause" onClick={() => {
                 handlePauseTimer();
                 setShowWarningModal(false);
               }}>
-                ⏸️ Pausar
+                Pausar
               </button>
-              
+
               <button className="modal-btn stop" onClick={() => {
                 handleStopTimer();
                 setShowWarningModal(false);
               }}>
-                ⏹️ Parar y descartar
+                Stop
               </button>
 
               <button className="modal-btn new-task" onClick={() => {
-                 // Stop current and let user choose new
-                 handleStopTimer(); 
-                 setShowWarningModal(false);
+                // Stop current and let user choose new
+                handleStopTimer();
+                setShowWarningModal(false);
               }}>
                 ➕ Iniciar nueva tarea
               </button>

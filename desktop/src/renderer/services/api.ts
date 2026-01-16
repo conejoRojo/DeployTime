@@ -61,10 +61,13 @@ export interface ApiError {
 class ApiService {
   private client: AxiosInstance;
   private token: string | null = null;
+  private baseUrl: string;
 
   constructor() {
+    this.baseUrl = localStorage.getItem('api_url') || 'http://localhost:8000/api';
+
     this.client = axios.create({
-      baseURL: API_BASE_URL,
+      baseURL: this.baseUrl,
       headers: {
         'Content-Type': 'application/json',
         'Accept': 'application/json',
@@ -93,6 +96,20 @@ class ApiService {
     );
 
     this.loadToken();
+  }
+
+  public updateBaseUrl(newUrl: string): void {
+    let formattedUrl = newUrl.trim();
+    if (!formattedUrl.endsWith('/api')) {
+      formattedUrl = formattedUrl.endsWith('/') ? `${formattedUrl}api` : `${formattedUrl}/api`;
+    }
+    this.baseUrl = formattedUrl;
+    localStorage.setItem('api_url', formattedUrl);
+    this.client.defaults.baseURL = formattedUrl;
+  }
+
+  public getBaseUrl(): string {
+    return this.baseUrl;
   }
 
   private loadToken(): void {
