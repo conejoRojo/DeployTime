@@ -79,13 +79,25 @@
                                 Asignado</th>
                             <th
                                 class="px-5 py-3 border-b-2 border-gray-200 bg-gray-100 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">
-                                Estado</th>
+                                Estado / Tiempo</th>
                             <th
                                 class="px-5 py-3 border-b-2 border-gray-200 bg-gray-100 text-right text-xs font-semibold text-gray-600 uppercase tracking-wider">
                                 Acción</th>
                         </tr>
                     </thead>
                     <tbody>
+                        @php
+                            $statusLabels = [
+                                'pending' => 'Pendiente',
+                                'in_progress' => 'En Progreso',
+                                'completed' => 'Completada',
+                            ];
+                            $statusColors = [
+                                'pending' => 'bg-gray-200 text-gray-700',
+                                'in_progress' => 'bg-yellow-200 text-yellow-800',
+                                'completed' => 'bg-green-200 text-green-800',
+                            ];
+                        @endphp
                         @forelse($project->tasks as $task)
                             <tr>
                                 <td class="px-5 py-4 border-b border-gray-200 bg-white text-sm">
@@ -108,12 +120,15 @@
                                 </td>
                                 <td class="px-5 py-4 border-b border-gray-200 bg-white text-sm">
                                     <span
-                                        class="inline-block px-2 py-1 text-xs font-semibold leading-tight text-gray-700 bg-gray-200 rounded-full">
-                                        {{ ucfirst($task->status) }}
+                                        class="inline-block px-2 py-1 text-xs font-semibold leading-tight rounded-full {{ $statusColors[$task->status] ?? 'bg-gray-200' }}">
+                                        {{ $statusLabels[$task->status] ?? ucfirst($task->status) }}
                                     </span>
-                                    @if($task->estimated_hours)
-                                        <span class="block text-xs text-gray-500 mt-1">{{ $task->estimated_hours }}h est.</span>
-                                    @endif
+                                    <div class="mt-2 text-xs text-gray-600">
+                                        <span class="font-bold">Acumulado:</span> {{ $task->totalTimeSpentFormatted() }}
+                                        @if($task->estimated_hours)
+                                            <span class="text-gray-400 ml-1">/ {{ $task->estimated_hours }}h est.</span>
+                                        @endif
+                                    </div>
                                 </td>
                                 <td class="px-5 py-4 border-b border-gray-200 bg-white text-sm text-right">
                                     <div class="flex items-center justify-end space-x-2">
@@ -149,6 +164,15 @@
                         @endforelse
                     </tbody>
                 </table>
+                <div class="px-5 py-4 bg-gray-50 border-t border-gray-200 text-xs text-gray-500">
+                    <p class="font-bold mb-1">Estados:</p>
+                    <ul class="list-disc pl-5 space-y-1">
+                        <li><span class="font-semibold text-gray-700">Pendiente:</span> Tarea creada pero sin iniciar trabajo.</li>
+                        <li><span class="font-semibold text-yellow-700">En Progreso:</span> Se ha registrado tiempo o se marcó activamente.</li>
+                        <li><span class="font-semibold text-green-700">Completada:</span> Finalizada manualmente.</li>
+                    </ul>
+                    <p class="mt-2"><i>Las horas acumuladas se actualizan al recargar la página tras registrar tiempo en la app de escritorio.</i></p>
+                </div>
             </div>
         </div>
 

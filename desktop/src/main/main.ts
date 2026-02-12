@@ -1,4 +1,4 @@
-import { app, BrowserWindow, Tray, Menu, nativeImage } from 'electron';
+import { app, BrowserWindow, Tray, Menu, nativeImage, ipcMain } from 'electron';
 import * as path from 'path';
 
 let mainWindow: BrowserWindow | null = null;
@@ -110,6 +110,22 @@ function showWindow() {
 // Esta aplicación corre en el system tray, no se cierra al cerrar todas las ventanas
 app.on('window-all-closed', () => {
   // No hacemos nada, la app sigue corriendo en el tray
+});
+
+// IPC Handlers
+
+ipcMain.on('toggle-window', () => {
+  toggleWindow();
+});
+
+ipcMain.on('hide-window', () => {
+  if (mainWindow?.isVisible()) {
+    mainWindow.hide();
+  }
+});
+
+ipcMain.on('quit-app', () => {
+  app.quit();
 });
 
 app.on('ready', () => {

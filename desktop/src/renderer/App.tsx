@@ -436,7 +436,8 @@ function App() {
       // Importante: NO tocamos selectedProject ni selectedTask para poder reanudar luego en la misma tarea
     } catch (err: any) { // Captura cualquier error que ocurra al pausar
       console.error('Error al pausar timer:', err); // Loguea el error en consola
-      setError(err.response?.data?.error || 'Error al pausar timer'); // Muestra mensaje de error al usuario
+      const msg = err.response?.data?.error || err.message || 'Error al pausar timer';
+      setError(msg); // Muestra mensaje de error al usuario
     } finally { // Este bloque se ejecuta siempre
       setLoading(false); // Quita el estado de carga
     } // Fin del finally
@@ -465,11 +466,47 @@ function App() {
       // setSelectedProject(null); // Dejar comentado hasta que lo decidas
     } catch (err: any) { // Captura errores de la API
       console.error('Error al detener timer:', err); // Loguea el error en consola
-      setError(err.response?.data?.error || 'Error al detener timer'); // Muestra mensaje de error en la UI
+      const msg = err.response?.data?.error || err.message || 'Error al detener timer';
+      setError(msg); // Muestra mensaje de error en la UI
     } finally { // Bloque que siempre se ejecuta
       setLoading(false); // Quita el estado de carga
     } // Fin del finally
   }; // Fin de handleStopTimer
+  
+  // Terminar Tarea (Completar)
+  const handleCompleteTask = async () => {
+    const targetTaskId = activeTimer?.task_id || selectedTask;
+    if (!targetTaskId) return;
+
+    setLoading(true);
+    setError(null);
+
+    try {
+      // 1. Si hay timer activo, detenerlo
+      if (activeTimer) {
+        await api.stopTimer(activeTimer.id, 'Tarea completada');
+        setActiveTimer(null);
+      }
+
+      // 2. Marcar tarea como completada en backend
+      await api.completeTask(targetTaskId);
+
+      // 3. Limpiar estado visual
+      setElapsedTime('00:00:00');
+      setAccumulatedTime(0);
+      setSelectedTask(null);
+      
+      // Actualizar la lista de tareas localmente para reflejar el cambio (opcional, o forzar recarga)
+      setTasks(tasks.map(t => t.id === targetTaskId ? { ...t, status: 'completed' } : t));
+
+    } catch (err: any) {
+      console.error('Error al completar tarea:', err);
+      const msg = err.response?.data?.error || err.message || 'Error al completar tarea';
+      setError(msg);
+    } finally {
+      setLoading(false);
+    }
+  };
 
 
 
@@ -799,9 +836,17 @@ function App() {
                 </button>
               )}
 
-              {/* STOP SIEMPRE DISPONIBLE EN AMBOS ESTADOS */}
-              <button className="btn-stop" onClick={handleStopTimer} disabled={loading}>
-                Stop
+              <button className="btn-stop" onClick={handleStopTimer} disabled={loading} style={{ marginRight: '5px' }}>
+                Detener
+              </button>
+
+              <button 
+                className="btn-stop" 
+                onClick={handleCompleteTask} 
+                disabled={loading}
+                style={{ backgroundColor: '#28a745' }} // Verde para Terminar
+              >
+                Terminar
               </button>
             </div>
           </div>
@@ -835,8 +880,8 @@ function App() {
                 >
                   <option value="">Selecciona una tarea</option>
                   {tasks.map((task) => (
-                    <option key={task.id} value={task.id}>
-                      {task.name}
+                    <option key={task.id} value={task.id} disabled={task.status === 'completed'}>
+                      {task.name} {task.status === 'completed' ? '(Completada)' : ''}
                     </option>
                   ))}
                 </select>

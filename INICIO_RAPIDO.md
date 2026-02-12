@@ -54,13 +54,26 @@ npm run dev
 
 ---
 
-## Usuarios de Prueba
+## Usuarios de Prueba Generados
 
-| Email | Password | Rol |
-|-------|----------|-----|
-| `admin@deploytime.com` | `admin123` | Admin |
-| `juan@deploytime.com` | `colaborador123` | Colaborador |
-| `maria@deploytime.com` | `colaborador123` | Colaborador |
+| Email | Password | Rol | Acceso |
+|-------|----------|-----|--------|
+| `martin@dixer.net` | `R2D2arturito` | Admin | Desktop App & Web Panel |
+| `lautaro@dixer.net` | `R2D2arturito` | Colaborador | Desktop App & Web Panel |
+| `luis@dixer.net` | `#Mexico1986` | Admin | Desktop App & Web Panel |
+
+---
+
+## 🌐 Panel de Administración Web
+
+El sistema cuenta con un panel web completo para administrar usuarios, proyectos y tareas.
+
+- **URL**: http://localhost:8000/login
+- **Funcionalidades**:
+  - Dashboard con estadísticas
+  - ABM de Usuarios (Crear, Editar, Eliminar)
+  - Gestión de Proyectos y Asignación de Tareas
+  - Ver reportes de tiempos
 
 ---
 

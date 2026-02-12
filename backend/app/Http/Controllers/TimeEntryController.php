@@ -98,12 +98,21 @@ class TimeEntryController extends Controller
             ], 400);
         }
 
+        if ($task->status === 'completed') {
+            return response()->json(['error' => 'No se puede iniciar una tarea completada.'], 400);
+        }
+
         $entry = TimeEntry::create([
             'task_id' => $request->task_id,
             'user_id' => $user->id,
             'start_time' => now(),
             'notes' => $request->notes,
         ]);
+
+        // Actualizar estado de la tarea a in_progress si estaba en pending
+        if ($task->status === 'pending') {
+            $task->update(['status' => 'in_progress']);
+        }
 
         return response()->json($entry->load(['task', 'user']), 201);
     }

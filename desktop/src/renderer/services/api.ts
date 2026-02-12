@@ -209,6 +209,13 @@ class ApiService {
     return response.data;
   }
 
+  async completeTask(taskId: number): Promise<Task> {
+    const response = await this.client.put<Task>(`/tasks/${taskId}`, {
+      status: 'completed',
+    });
+    return response.data;
+  }
+
   async stopTimer(id: number, notes?: string): Promise<TimeEntry> {
     const response = await this.client.put<TimeEntry>(`/time-entries/${id}/stop`, {
       notes,

@@ -69,6 +69,16 @@ class Task extends Model
         return round($this->totalTimeSpent() / 3600, 2);
     }
 
+    public function totalTimeSpentFormatted()
+    {
+        $seconds = $this->totalTimeSpent();
+        $hours = floor($seconds / 3600);
+        $minutes = floor(($seconds / 60) % 60);
+        $secs = $seconds % 60;
+
+        return sprintf('%02d:%02d:%02d', $hours, $minutes, $secs);
+    }
+
     public function isOverEstimate()
     {
         if (!$this->estimated_hours) {

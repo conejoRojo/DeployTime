@@ -24,11 +24,20 @@ class TaskController extends Controller
         $query = Task::where('project_id', $projectId)
             ->with(['creator', 'timeEntries', 'assignedUsers']);
 
+        // Permitir ver todas las tareas del proyecto a los miembros del proyecto
+        // Si no es admin, verificamos pertenencia al proyecto
         if (!$user->isAdmin()) {
-            // Colaborador solo ve sus tareas asignadas
-            $query->whereHas('assignedUsers', function ($q) use ($user) {
-                $q->where('user_id', $user->id);
-            });
+            // Verificar si el usuario es colaborador del proyecto
+            $isMember = $project->collaborators()->where('user_id', $user->id)->exists();
+            
+            // Si no es miembro y no tiene tareas asignadas (por si acaso se asignó directo sin ser miembro)
+            if (!$isMember) {
+                 // Opción A: Solo ver asignadas si no es miembro (mantenemos lógica anterior como fallback)
+                 $query->whereHas('assignedUsers', function ($q) use ($user) {
+                    $q->where('user_id', $user->id);
+                });
+            }
+            // Si ES miembro, no aplicamos filtro extra, ve todas las del proyecto.
         }
 
         $tasks = $query->get();
@@ -106,12 +115,8 @@ class TaskController extends Controller
         // Manejar asignaciones
         if ($request->has('assigned_users')) {
             $task->assignedUsers()->sync($request->assigned_users);
-        } else if (!$user->isAdmin()) {
-            // Si un colaborador crea una tarea y no asigna a nadie, se la auto-asigna
-            // para asegurar que pueda verla (según las reglas de filtrado anteriores)
-            $task->assignedUsers()->sync([$user->id]);
         }
-
+        
         return response()->json($task->load(['project', 'creator', 'assignedUsers']), 201);
     }
 
