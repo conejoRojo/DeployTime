@@ -124,10 +124,7 @@
                                         {{ $statusLabels[$task->status] ?? ucfirst($task->status) }}
                                     </span>
                                     <div class="mt-2 text-xs text-gray-600">
-                                        <span class="font-bold">Acumulado:</span> {{ $task->totalTimeSpentFormatted() }}
-                                        @if($task->estimated_hours)
-                                            <span class="text-gray-400 ml-1">/ {{ $task->estimated_hours }}h est.</span>
-                                        @endif
+                                        {{ $task->totalTimeSpentFormatted() }} / {{ $task->estimated_hours ?? '-' }}
                                     </div>
                                 </td>
                                 <td class="px-5 py-4 border-b border-gray-200 bg-white text-sm text-right">

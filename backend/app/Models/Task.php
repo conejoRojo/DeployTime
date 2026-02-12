@@ -56,12 +56,15 @@ class Task extends Model
      */
     public function totalTimeSpent()
     {
-        return $this->timeEntries->sum(function ($entry) {
-            if ($entry->end_time) {
-                return $entry->end_time->diffInSeconds($entry->start_time);
-            }
-            return 0;
-        });
+        $totalSeconds = $this->timeEntries->reduce(function ($carry, $entry) {
+            $start = \Carbon\Carbon::parse($entry->start_time);
+            $end = $entry->end_time ? \Carbon\Carbon::parse($entry->end_time) : now();
+            
+            // Usar valor absoluto diffInSeconds devuelve absoluto por defecto, pero forzamos asegurar positivo
+            return $carry + abs($end->diffInSeconds($start));
+        }, 0);
+
+        return $totalSeconds;
     }
 
     public function totalTimeSpentInHours()
@@ -72,6 +75,9 @@ class Task extends Model
     public function totalTimeSpentFormatted()
     {
         $seconds = $this->totalTimeSpent();
+        // Asegurar no negativos
+        $seconds = max(0, $seconds);
+        
         $hours = floor($seconds / 3600);
         $minutes = floor(($seconds / 60) % 60);
         $secs = $seconds % 60;

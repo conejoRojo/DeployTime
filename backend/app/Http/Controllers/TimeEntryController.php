@@ -77,12 +77,13 @@ class TimeEntryController extends Controller
         $task = Task::with('project')->find($request->task_id);
 
         // Verificar acceso al proyecto (colaborador o asignado a la tarea)
+        // Verificar acceso: Solo Admin, Asignado o Creador pueden iniciar timer
         if (!$user->isAdmin()) {
-            $isCollaborator = $task->project->collaborators->contains($user->id);
             $isAssigned = $task->assignedUsers->contains($user->id);
+            $isCreator = $task->created_by === $user->id;
 
-            if (!$isCollaborator && !$isAssigned) {
-                return response()->json(['error' => 'No tienes acceso a este proyecto'], 403);
+            if (!$isAssigned && !$isCreator) {
+                return response()->json(['error' => 'Solo el usuario asignado o el creador puede iniciar el contador.'], 403);
             }
         }
 
@@ -173,6 +174,15 @@ class TimeEntryController extends Controller
      */
     public function getActive()
     {
+        // Auto-corregir tiempos negativos históricos
+        try {
+            TimeEntry::whereNotNull('end_time')
+                ->whereColumn('end_time', '<', 'start_time')
+                ->update(['end_time' => \DB::raw('start_time')]);
+        } catch (\Exception $e) {
+            // Ignorar si falla por DB lock u otro
+        }
+
         $user = auth()->user();
         $activeEntry = TimeEntry::where('user_id', $user->id)
             ->whereNull('end_time')
@@ -180,8 +190,11 @@ class TimeEntryController extends Controller
             ->first();
 
         if (!$activeEntry) {
-            return response()->json(['active_entry' => null]);
+            return response()->json(null);
         }
+        
+        // Agregar tiempo total calculado por el servidor para sincronización
+        $activeEntry->task_total_seconds = $activeEntry->task->totalTimeSpent();
 
         return response()->json($activeEntry);
     }

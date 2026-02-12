@@ -115,6 +115,9 @@ class TaskController extends Controller
         // Manejar asignaciones
         if ($request->has('assigned_users')) {
             $task->assignedUsers()->sync($request->assigned_users);
+        } else {
+            // Auto-asignar al creador
+            $task->assignedUsers()->attach($user->id);
         }
         
         return response()->json($task->load(['project', 'creator', 'assignedUsers']), 201);

@@ -32,6 +32,7 @@ export interface Task {
   created_by: number;
   created_at: string;
   updated_at: string;
+  assigned_users?: User[];
 }
 
 export interface TimeEntry {
@@ -44,6 +45,7 @@ export interface TimeEntry {
   created_at: string;
   updated_at: string;
   task?: Task;
+  task_total_seconds?: number;
 }
 
 export interface LoginResponse {

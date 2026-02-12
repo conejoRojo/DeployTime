@@ -37,7 +37,7 @@ class ProjectController extends Controller
 
     public function show(Project $project)
     {
-        $project->load(['tasks.assignedUsers', 'tasks.creator']);
+        $project->load(['tasks.assignedUsers', 'tasks.creator', 'tasks.timeEntries']);
         $users = User::all(); // For assignment dropdown
         return view('admin.projects.show', compact('project', 'users'));
     }

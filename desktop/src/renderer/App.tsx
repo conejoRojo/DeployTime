@@ -257,9 +257,20 @@ function App() {
           setTasks(tasksData);
 
           // Cargar el tiempo acumulado previo en esta tarea
-          const accumulated = await api.getTaskTotalTime(activeEntry.task_id);
-          console.log('Tiempo acumulado previo:', accumulated, 'segundos');
-          setAccumulatedTime(accumulated);
+          // Cargar el tiempo acumulado previo en esta tarea
+          if (activeEntry.task_total_seconds !== undefined) {
+            const startMs = new Date(activeEntry.start_time).getTime();
+            const nowMs = Date.now();
+            const currentSessionSec = Math.floor((nowMs - startMs) / 1000);
+            // Sincronizar: Ajustar accumulatedTime para que (acc + current) coincida con el total del servidor
+            const adjustedAccumulated = activeEntry.task_total_seconds - currentSessionSec;
+            setAccumulatedTime(adjustedAccumulated);
+            console.log('Sincronizando con servidor. Total Server:', activeEntry.task_total_seconds, 'Ajuste:', adjustedAccumulated);
+          } else {
+            const accumulated = await api.getTaskTotalTime(activeEntry.task_id);
+            console.log('Tiempo acumulado previo:', accumulated, 'segundos');
+            setAccumulatedTime(accumulated);
+          }
         }
       }
     } catch (err: any) {
@@ -761,17 +772,7 @@ function App() {
           >
             👤
           </button>
-          <button
-            className="btn-logout header-icon"
-            onClick={() => {
-              if (window.electronAPI && window.electronAPI.toggleWindow) {
-                window.electronAPI.toggleWindow();
-              }
-            }}
-            title="Esconder"
-          >
-            X
-          </button>
+
         </div>
       </div>
 
@@ -824,7 +825,12 @@ function App() {
 
               {/* SI ESTÁ PAUSADO → MOSTRAR BOTÓN PLAY */}
               {isPaused && (
-                <button className="btn-pause" onClick={handleStartTimer} disabled={loading}>
+                <button 
+                  className="btn-pause" 
+                  onClick={handleStartTimer} 
+                  disabled={loading || !(user?.role === 'admin' || tasks.find(t => t.id === selectedTask)?.assigned_users?.some(u => u.id === user?.id) || tasks.find(t => t.id === selectedTask)?.created_by === user?.id)}
+                  title={(user?.role === 'admin' || tasks.find(t => t.id === selectedTask)?.assigned_users?.some(u => u.id === user?.id) || tasks.find(t => t.id === selectedTask)?.created_by === user?.id) ? 'Reanudar' : 'Solo asignado/creador/admin'}
+                >
                   Play
                 </button>
               )}
@@ -889,7 +895,12 @@ function App() {
             )}
 
 
-            <button className="btn-start" onClick={handleStartTimer} disabled={!selectedTask || loading}>
+            <button 
+              className="btn-start" 
+              onClick={handleStartTimer} 
+              disabled={!selectedTask || loading || !(user?.role === 'admin' || tasks.find(t => t.id === selectedTask)?.assigned_users?.some(u => u.id === user?.id) || tasks.find(t => t.id === selectedTask)?.created_by === user?.id)}
+              title={(!selectedTask) ? 'Selecciona una tarea' : (user?.role === 'admin' || tasks.find(t => t.id === selectedTask)?.assigned_users?.some(u => u.id === user?.id) || tasks.find(t => t.id === selectedTask)?.created_by === user?.id) ? 'Iniciar Timer' : 'Solo el usuario asignado o creador puede iniciar esta tarea'}
+            >
               {loading ? 'Iniciando...' : 'Iniciar Timer'}
             </button>
           </div>
