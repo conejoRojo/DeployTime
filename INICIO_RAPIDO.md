@@ -17,8 +17,7 @@ Guía para iniciar el proyecto en 5 minutos.
 ### 1. Iniciar Backend
 
 ```bash
-cd backend
-docker-compose up -d
+npm run backend:up
 ```
 
 **Resultado**:
@@ -30,7 +29,7 @@ docker-compose up -d
 
 ```bash
 # Ejecutar migraciones (si es primera vez)
-docker-compose exec app php artisan migrate --seed
+npm run migrate
 
 # Probar API
 curl http://localhost:8000/api/auth/login \
@@ -43,8 +42,7 @@ curl http://localhost:8000/api/auth/login \
 ### 3. Iniciar Desktop App
 
 ```bash
-cd desktop
-npm install   # Solo primera vez
+npm run install:desktop   # Solo primera vez
 npm run dev
 ```
 
