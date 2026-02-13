@@ -37,33 +37,46 @@ El backend está contenerizado con Docker, lo que facilita su despliegue en cual
 
 Para desplegar el backend en un hosting compartido o servidor con cPanel (como Toran):
 
-1. **Preparar archivos**:
-   - Comprimir el contenido de la carpeta `backend` (excepto `node_modules` y `vendor`).
-   - Asegurarse de tener la carpeta `vendor` generada localmente (`composer install`) o ejecutar `composer install` en el servidor si tiene acceso SSH. Lo ideal es subir `vendor` si no hay SSH.
+### 2.1. Configuración de Subdominio y SSL (Recomendado)
+Para asegurar el funcionamiento de sesiones y HTTPS:
 
-2. **Subir archivos**:
-   - Usar un cliente FTP (FileZilla) o el Administrador de Archivos de cPanel.
-   - Crear una carpeta fuera del `public_html` (ej: `deploytime_api`) y subir ahí todo el contenido.
-   - Mover el contenido de la carpeta `public` del backend al `public_html` (o subdominio).
+1. **Crear Subdominio**:
+   - Accede a cPanel → **Dominios** (o Subdominios).
+   - Crea `deploytime.dixer.net`.
+   - Establece el **Directorio raíz (Document Root)** a la carpeta `public_html/api` (donde subirás el contenido de la carpeta `public` de Laravel).
 
-3. **Configurar Base de Datos**:
+2. **Activar HTTPS**:
+   - Accede a cPanel → **SSL/TLS Status**.
+   - Selecciona `deploytime.dixer.net` y haz clic en **Run AutoSSL**. Esto generará el certificado gratuito.
+
+### 2.2. Preparar y subir archivos
+
+### 2.3. Configurar Base de Datos:
    - En cPanel → Bases de Datos MySQL: Crear una nueva BD y Usuario.
-   - En phpMyAdmin: Importar la estructura si es necesario, o dejar que las migraciones corran (si hay acceso SSH). Si no, exportar la BD local e importarla en el servidor.
+   - En phpMyAdmin: Importar el archivo `init_database.sql` proporcionado.
+   - Si tiene acceso SSH, puede correr las migraciones: `php artisan migrate --seed`.
 
-4. **Configurar index.php**:
-   - Editar `public_html/index.php` para apuntar correctamente a la carpeta donde subiste el código:
+### 2.4. Configurar .env:
+   - Subir `.env` con las credenciales de producción (BD, URL).
+   - `APP_ENV=production`
+   - `APP_DEBUG=false`
+   - **Crucial**: Ejecutar `php artisan key:generate` para generar la `APP_KEY` si no se ha configurado.
+
+### 2.5. Configurar index.php:
+   - Si movió la carpeta `public` al `public_html`, edite `index.php` para apuntar correctamente al vendor y bootstrap:
      ```php
      require __DIR__.'/../deploytime_api/vendor/autoload.php';
      $app = require_once __DIR__.'/../deploytime_api/bootstrap/app.php';
      ```
 
-5. **Configurar .env**:
-   - Subir `.env` con las credenciales de producción (BD, URL).
-   - `APP_ENV=production`
-   - `APP_DEBUG=false`
-
-6. **Permisos**:
+### 2.6. Permisos y Enlaces:
    - Asegurar que `storage` y `bootstrap/cache` tengan permisos de escritura (775).
+   - Crear enlace simbólico para storage: `php artisan storage:link`. Si no tiene SSH, puede crear un script PHP que ejecute `symlink()`.
+
+### 2.7. Optimización:
+   - `php artisan config:cache`
+   - `php artisan route:cache`
+   - `php artisan view:cache`
 
 ---
 
