@@ -9,7 +9,7 @@
   "scripts": {
     "dev": "concurrently \"npm run dev:vite\" \"npm run dev:electron\"",
     "dev:vite": "vite",
-    "dev:electron": "wait-on tcp:127.0.0.1:3001 && cross-env NODE_ENV=development electron .",
+    "dev:electron": "wait-on tcp:127.0.0.1:3001 && cross-env NODE_ENV=development npx electron .",
     "build": "npm run build:renderer && npm run build:main && npm run build:preload",
     "build:renderer": "vite build",
     "build:main": "tsc src/main/main.ts --outDir dist/main --module commonjs --target ES2020 --esModuleInterop --skipLibCheck",
@@ -47,7 +47,7 @@
     "@vitejs/plugin-react": "^4.7.0",
     "concurrently": "^9.2.1",
     "cross-env": "^10.1.0",
-    "electron": "^39.2.1",
+    "electron": "^40.4.1",
     "electron-builder": "^26.0.12",
     "electron-is-dev": "^3.0.1",
     "typescript": "^5.9.3",

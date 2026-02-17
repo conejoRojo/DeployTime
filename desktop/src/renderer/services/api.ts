@@ -1,6 +1,6 @@
 import axios, { AxiosInstance, AxiosError } from 'axios';
 
-const API_BASE_URL = 'http://localhost:8000/api';
+const API_BASE_URL = 'https://deploytime.dixer.net/api';
 
 export interface User {
   id: number;
@@ -66,7 +66,7 @@ class ApiService {
   private baseUrl: string;
 
   constructor() {
-    this.baseUrl = localStorage.getItem('api_url') || 'http://localhost:8000/api';
+    this.baseUrl = localStorage.getItem('api_url') || 'https://deploytime.dixer.net/api';
 
     this.client = axios.create({
       baseURL: this.baseUrl,
@@ -106,6 +106,7 @@ class ApiService {
       formattedUrl = formattedUrl.endsWith('/') ? `${formattedUrl}api` : `${formattedUrl}/api`;
     }
     this.baseUrl = formattedUrl;
+    localStorage.removeItem('api_url'); // Clean cache to force new updates if needed
     localStorage.setItem('api_url', formattedUrl);
     this.client.defaults.baseURL = formattedUrl;
   }
