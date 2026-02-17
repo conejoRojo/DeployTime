@@ -1,0 +1,16 @@
+{
+    "name": "deploytime-root",
+    "version": "1.0.0",
+    "description": "Root project for DeployTime",
+    "scripts": {
+        "dev": "npm run dev --prefix desktop",
+        "install:desktop": "npm install --prefix desktop",
+        "install:backend": "cd backend && composer install",
+        "package:win": "npm run package:win --prefix desktop",
+        "backend:up": "cd backend && docker-compose up -d",
+        "backend:down": "cd backend && docker-compose down",
+        "migrate": "cd backend && docker-compose exec app php artisan migrate --seed"
+    },
+    "author": "",
+    "license": "ISC"
+}
