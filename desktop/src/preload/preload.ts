@@ -4,7 +4,7 @@ import { contextBridge, ipcRenderer } from 'electron';
 contextBridge.exposeInMainWorld('electronAPI', {
   // API para comunicación con el proceso principal
   sendMessage: (channel: string, data: any) => {
-    const validChannels = ['start-timer', 'stop-timer', 'sync-data', 'hide-window', 'toggle-window', 'quit-app'];
+    const validChannels = ['hide-window', 'toggle-window', 'quit-app'];
     if (validChannels.includes(channel)) {
       ipcRenderer.send(channel, data);
     }
@@ -15,7 +15,7 @@ contextBridge.exposeInMainWorld('electronAPI', {
   quitApp: () => ipcRenderer.send('quit-app'),
 
   onMessage: (channel: string, callback: (data: any) => void) => {
-    const validChannels = ['timer-update', 'sync-complete', 'inactivity-warning', 'app-closing', 'timer-synced'];
+    const validChannels = ['app-closing'];
     if (validChannels.includes(channel)) {
       ipcRenderer.on(channel, (_event, data) => callback(data));
     }
