@@ -1,6 +1,6 @@
-# DeployTime - Inicio Rápido
+﻿# DeployTime - Inicio RÃ¡pido
 
-Guía para iniciar el proyecto en 5 minutos.
+GuÃ­a para iniciar el proyecto en 5 minutos.
 
 ---
 
@@ -62,15 +62,15 @@ npm run dev
 
 ---
 
-## 🌐 Panel de Administración Web
+## ðŸŒ Panel de AdministraciÃ³n Web
 
 El sistema cuenta con un panel web completo para administrar usuarios, proyectos y tareas.
 
 - **URL**: http://localhost:8000/login
 - **Funcionalidades**:
-  - Dashboard con estadísticas
+  - Dashboard con estadÃ­sticas
   - ABM de Usuarios (Crear, Editar, Eliminar)
-  - Gestión de Proyectos y Asignación de Tareas
+  - GestiÃ³n de Proyectos y AsignaciÃ³n de Tareas
   - Ver reportes de tiempos
 
 ---
@@ -80,18 +80,18 @@ El sistema cuenta con un panel web completo para administrar usuarios, proyectos
 ### Paso 1: Login
 1. Abrir la app desde el system tray
 2. Ingresar: `juan@deploytime.com` / `colaborador123`
-3. Click "Iniciar Sesión"
+3. Click "Iniciar SesiÃ³n"
 
 ### Paso 2: Seleccionar Proyecto y Tarea
-1. Dropdown "Proyecto" → Seleccionar "Sistema Web de Gestión"
-2. Dropdown "Tarea" → Seleccionar "Desarrollo API REST"
+1. Dropdown "Proyecto" â†’ Seleccionar "Sistema Web de GestiÃ³n"
+2. Dropdown "Tarea" â†’ Seleccionar "Desarrollo API REST"
 
 ### Paso 3: Iniciar Timer
 1. Click "Iniciar Timer"
-2. El timer comenzará a contar en pantalla
+2. El timer comenzarÃ¡ a contar en pantalla
 
 ### Paso 4: Trabajar
-- El timer cuenta automáticamente
+- El timer cuenta automÃ¡ticamente
 - Puedes cerrar la ventana, el timer sigue corriendo
 - Click en el icono del tray para abrir de nuevo
 
@@ -105,14 +105,14 @@ El sistema cuenta con un panel web completo para administrar usuarios, proyectos
 ## Datos de Prueba Incluidos
 
 - **2 Proyectos**:
-  - Sistema Web de Gestión
-  - App Móvil E-commerce
+  - Sistema Web de GestiÃ³n
+  - App MÃ³vil E-commerce
 
 - **4 Tareas**:
-  - Diseño de base de datos (completada)
+  - DiseÃ±o de base de datos (completada)
   - Desarrollo API REST (en progreso)
   - Frontend React (pendiente)
-  - Configuración inicial Flutter (completada)
+  - ConfiguraciÃ³n inicial Flutter (completada)
 
 - **5 Time Entries**:
   - Varios registros de tiempo completados
@@ -124,7 +124,7 @@ El sistema cuenta con un panel web completo para administrar usuarios, proyectos
 
 ### Backend no inicia
 ```bash
-# Verificar que Docker esté corriendo
+# Verificar que Docker estÃ© corriendo
 docker ps
 
 # Ver logs
@@ -134,7 +134,7 @@ docker-compose logs -f app
 
 ### Desktop no inicia
 ```bash
-# Verificar que backend esté corriendo
+# Verificar que backend estÃ© corriendo
 curl http://localhost:8000/api/projects
 
 # Limpiar y reinstalar
@@ -145,16 +145,16 @@ npm run dev
 ```
 
 ### Error "Connection refused"
-- Verificar que el backend esté corriendo: `docker-compose ps`
-- Verificar que MySQL esté en puerto 3308: `docker ps | grep 3308`
+- Verificar que el backend estÃ© corriendo: `docker-compose ps`
+- Verificar que MySQL estÃ© en puerto 3308: `docker ps | grep 3308`
 
 ### Error "JWT Token invalid"
 - Logout y volver a hacer login
-- Verificar que `JWT_SECRET` esté en backend/.env
+- Verificar que `JWT_SECRET` estÃ© en backend/.env
 
 ---
 
-## Notas sobre Docker (desarrollo) 🔧
+## Notas sobre Docker (desarrollo) ðŸ”§
 
 Si ves errores como "The /var/www/bootstrap/cache directory must be present and writable" o "Failed opening required '/var/www/vendor/autoload.php'", prueba las siguientes opciones:
 
@@ -164,17 +164,17 @@ Si ves errores como "The /var/www/bootstrap/cache directory must be present and 
 docker-compose -f backend/docker-compose.yml up -d --build app
 ```
 
-- Forzar recreación si ya existe el contenedor:
+- Forzar recreaciÃ³n si ya existe el contenedor:
 
 ```bash
 docker-compose -f backend/docker-compose.yml up -d --force-recreate --build app
 ```
 
-- Ejecutar `composer` dentro del contenedor (si `vendor` está vacío o faltan dependencias):
+- Ejecutar `composer` dentro del contenedor (si `vendor` estÃ¡ vacÃ­o o faltan dependencias):
 
 ```bash
 docker-compose -f backend/docker-compose.yml run --rm app composer install --no-interaction --prefer-dist --optimize-autoloader
-# o si el contenedor ya está corriendo:
+# o si el contenedor ya estÃ¡ corriendo:
 docker-compose exec app composer install --no-interaction --prefer-dist --optimize-autoloader
 ```
 
@@ -185,7 +185,7 @@ docker volume rm backend_vendor
 docker-compose -f backend/docker-compose.yml up -d --build app
 ```
 
-- Ajustar permisos si hay problemas de escritura (útil en bind mounts/Windows):
+- Ajustar permisos si hay problemas de escritura (Ãºtil en bind mounts/Windows):
 
 ```bash
 docker-compose exec app chown -R www-data:www-data /var/www/bootstrap/cache /var/www/vendor
@@ -199,9 +199,9 @@ docker-compose exec app chmod -R 0777 /var/www/bootstrap/cache /var/www/vendor
 docker-compose -f backend/docker-compose.yml logs -f app
 ```
 
-Consejo: el contenedor incluye un `entrypoint` que crea `bootstrap/cache` y lanza `composer install` si `vendor` está vacío; en Windows los bind mounts pueden ocultar cambios hechos en la capa de la imagen, por lo que a veces es necesario eliminar el volumen `backend_vendor` para recuperar los `vendor` generados en la imagen.
+Consejo: el contenedor incluye un `entrypoint` que crea `bootstrap/cache` y lanza `composer install` si `vendor` estÃ¡ vacÃ­o; en Windows los bind mounts pueden ocultar cambios hechos en la capa de la imagen, por lo que a veces es necesario eliminar el volumen `backend_vendor` para recuperar los `vendor` generados en la imagen.
 
-### Snippet útil: fragmento de `Dockerfile.dev` (entrypoint & permisos)
+### Snippet Ãºtil: fragmento de `Dockerfile.dev` (entrypoint & permisos)
 
 ```dockerfile
 # Copy entrypoint script and make it executable
@@ -217,7 +217,7 @@ RUN mkdir -p /var/www/bootstrap/cache \
 ENTRYPOINT ["/usr/local/bin/entrypoint.sh"]
 ```
 
-### Comandos rápidos para reiniciar (desarrollo)
+### Comandos rÃ¡pidos para reiniciar (desarrollo)
 
 - Reconstruir y levantar `app`:
 
@@ -231,7 +231,7 @@ docker-compose -f backend/docker-compose.yml up -d --build app
 docker-compose -f backend/docker-compose.yml down && docker-compose -f backend/docker-compose.yml up -d --build
 ```
 
-> Después de guardar este fragmento, puedes reiniciar la app con los comandos anteriores.
+> DespuÃ©s de guardar este fragmento, puedes reiniciar la app con los comandos anteriores.
 
 ---
 
@@ -245,7 +245,7 @@ docker-compose -f backend/docker-compose.yml down && docker-compose -f backend/d
 
 ---
 
-## Testing Rápido
+## Testing RÃ¡pido
 
 ### Test de Backend
 ```bash
@@ -269,7 +269,7 @@ curl http://localhost:8000/api/projects \
 4. Iniciar timer
 5. Esperar 10 segundos
 6. Detener timer
-7. Verificar en backend que se guardó:
+7. Verificar en backend que se guardÃ³:
    ```bash
    curl http://localhost:8000/api/my/time-entries \
      -H "Authorization: Bearer $TOKEN"
@@ -277,27 +277,27 @@ curl http://localhost:8000/api/projects \
 
 ---
 
-## Documentación Completa
+## DocumentaciÃ³n Completa
 
-- [README Principal](README.md) - Visión general del proyecto
-- [Backend Completado](docs/BACKEND_COMPLETADO.md) - Detalles del backend
-- [Integración Completada](docs/INTEGRACION_COMPLETADA.md) - Integración Backend + Desktop
-- [Resumen Final](docs/RESUMEN_FINAL.md) - Resumen ejecutivo completo
+- [README Principal](README.md) - VisiÃ³n general del proyecto
+- [Guía de Implementación](docs/GUIA_IMPLEMENTACION.md) - Setup y arquitectura
+- [Pipeline](docs/PIPELINE.md) - CI/CD y validaciones
+- [Seguridad](docs/SECURITY.md) - Controles de seguridad
 
 ---
 
 ## Siguiente Paso
 
-Una vez que todo esté funcionando:
+Una vez que todo estÃ© funcionando:
 
-1. **Desarrollo**: Modificar código y ver cambios en hot reload
+1. **Desarrollo**: Modificar cÃ³digo y ver cambios en hot reload
 2. **Testing**: Probar todos los flujos (login, timer, sync, inactivity)
 3. **Build**: `npm run package:win` para crear instalador Windows
 4. **Deploy**: Subir backend a servidor Debian (Toran)
 
 ---
 
-## Checklist de Verificación
+## Checklist de VerificaciÃ³n
 
 - [ ] Docker Desktop corriendo
 - [ ] `docker-compose up -d` ejecutado
@@ -312,8 +312,11 @@ Una vez que todo esté funcionando:
 
 ---
 
-**¡Listo!**
+**Â¡Listo!**
 
-El sistema DeployTime está corriendo y listo para usar.
+El sistema DeployTime estÃ¡ corriendo y listo para usar.
 
-Para más información, consulta la [documentación completa](README.md).
+Para mÃ¡s informaciÃ³n, consulta la [documentaciÃ³n completa](README.md).
+
+
+

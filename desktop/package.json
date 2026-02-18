@@ -14,8 +14,8 @@
     "build:renderer": "vite build",
     "build:main": "tsc src/main/main.ts --outDir dist/main --module commonjs --target ES2020 --esModuleInterop --skipLibCheck",
     "build:preload": "tsc src/preload/preload.ts --outDir dist/preload --module commonjs --target ES2020 --esModuleInterop --skipLibCheck",
-    "package": "npm run build && electron-builder",
-    "package:win": "npm run build && electron-builder --win"
+    "package": "node generate-icons.js && npm run build && electron-builder",
+    "package:win": "node generate-icons.js && npm run build && electron-builder --win"
   },
   "build": {
     "appId": "com.deploytime.app",
@@ -33,12 +33,20 @@
       "target": [
         "nsis"
       ],
-      "icon": "assets/icon.ico"
+      "icon": "assets/icon.ico",
+      "requestedExecutionLevel": "asInvoker"
     },
     "nsis": {
-      "oneClick": false,
-      "allowToChangeInstallationDirectory": true
-    }
+      "oneClick": true,
+      "perMachine": false,
+      "allowElevation": false,
+      "createDesktopShortcut": true,
+      "createStartMenuShortcut": true,
+      "shortcutName": "DeployTime",
+      "runAfterFinish": true,
+      "deleteAppDataOnUninstall": false
+    },
+    "publish": null
   },
   "devDependencies": {
     "@types/node": "^24.10.1",
@@ -50,6 +58,7 @@
     "electron": "^40.4.1",
     "electron-builder": "^26.0.12",
     "electron-is-dev": "^3.0.1",
+    "png-to-ico": "^3.0.1",
     "typescript": "^5.9.3",
     "vite": "^6.4.1",
     "wait-on": "^9.0.3"

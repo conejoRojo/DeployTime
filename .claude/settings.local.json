@@ -3,7 +3,14 @@
     "allow": [
       "Bash(mkdir:*)",
       "Bash(docker-compose exec:*)",
-      "Bash(npm install:*)"
+      "Bash(npm install:*)",
+      "Bash(git -C d:/Desarrollo/DeployTime ls-files)",
+      "Bash(dir:*)",
+      "Bash(node -e:*)",
+      "Bash(cmd /c \"echo test\")",
+      "Bash(cmd /c \"dir d:\\\\Desarrollo\\\\DeployTime\\\\desktop /b\")",
+      "Bash(powershell -Command:*)",
+      "Bash(powershell -ExecutionPolicy Bypass -File \"d:\\\\Desarrollo\\\\DeployTime\\\\desktop\\\\build-win.ps1\")"
     ],
     "deny": [],
     "ask": []
