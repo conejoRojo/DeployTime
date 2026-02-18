@@ -410,13 +410,7 @@ function App() {
       const accumulated = await api.getTaskTotalTime(selectedTask);
       console.log('Tiempo acumulado previo en la tarea:', accumulated, 'segundos');
 
-      // Use IPC for offline support
-      const result = await window.electronAPI.startTimer(selectedTask, 'Iniciando trabajo');
-      if (!result.success) {
-        throw new Error(result.error || 'Error al iniciar timer');
-      }
-      
-      const entry = result.data;
+      const entry = await api.startTimer(selectedTask, 'Iniciando trabajo');
       setActiveTimer(entry);
       setLastWarnedCycle(Math.floor(accumulatedTime / (warningMinutes * 60)));
 
@@ -446,11 +440,7 @@ function App() {
       const currentSession = Math.floor((nowMs - startMs) / 1000); // Calcula los segundos trabajados en esta sesión
       const newTotal = accumulatedTime + currentSession; // Suma el acumulado previo más la sesión actual
 
-      // Use IPC for offline support
-      const result = await window.electronAPI.pauseTimer(activeTimer.id, 'Sesión pausada');
-      if (!result.success) {
-        throw new Error(result.error || 'Error al pausar timer');
-      }
+      await api.stopTimer(activeTimer.id, 'Sesión pausada'); // Detiene la sesión actual en el backend con nota de pausa
 
       setAccumulatedTime(newTotal); // Actualiza el tiempo acumulado total en estado
       setElapsedTime(formatSecondsToTime(newTotal)); // Congela en pantalla el tiempo total en formato hh:mm:ss
@@ -478,11 +468,7 @@ function App() {
     setError(null); // Limpia errores previos
 
     try { // Bloque try/catch para manejar la llamada a la API
-      // Use IPC for offline support
-      const result = await window.electronAPI.stopTimer(activeTimer.id, 'Sesión finalizada');
-      if (!result.success) {
-        throw new Error(result.error || 'Error al detener timer');
-      }
+      await api.stopTimer(activeTimer.id, 'Sesión finalizada'); // Llama a la API para detener definitivamente la sesión de tiempo
 
       setActiveTimer(null); // Elimina el timer activo, deteniendo el intervalo
       setElapsedTime('00:00:00'); // Resetea el cronómetro visual a cero
@@ -508,21 +494,18 @@ function App() {
     setError(null);
 
     try {
-      // Use IPC for offline support
-      const result = await window.electronAPI.completeTask(
-        targetTaskId,
-        activeTimer?.id,
-        'Tarea completada'
-      );
-      if (!result.success) {
-        throw new Error(result.error || 'Error al completar tarea');
+      // 1. Si hay timer activo, detenerlo
+      if (activeTimer) {
+        await api.stopTimer(activeTimer.id, 'Tarea completada');
+        setActiveTimer(null);
       }
 
+      // 2. Marcar tarea como completada en backend
+      await api.completeTask(targetTaskId);
 
-      // Limpiar estado visual
+      // 3. Limpiar estado visual
       setElapsedTime('00:00:00');
       setAccumulatedTime(0);
-      setActiveTimer(null);
       setSelectedTask(null);
       
       // Actualizar la lista de tareas localmente para reflejar el cambio (opcional, o forzar recarga)

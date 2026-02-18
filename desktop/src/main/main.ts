@@ -1,7 +1,5 @@
 import { app, BrowserWindow, Tray, Menu, nativeImage, ipcMain } from 'electron';
 import * as path from 'path';
-import { getSyncService } from './sync';
-import { getDatabase } from './database';
 
 let mainWindow: BrowserWindow | null = null;
 let tray: Tray | null = null;
@@ -128,94 +126,6 @@ ipcMain.on('hide-window', () => {
 
 ipcMain.on('quit-app', () => {
   app.quit();
-});
-
-// Timer IPC Handlers - Delegate to SyncService for offline queue support
-ipcMain.handle('timer:start', async (event, data) => {
-  try {
-    const { taskId, notes } = data;
-    const syncService = getSyncService();
-    const result = await syncService.syncTimerStart(taskId, notes || '');
-    return { success: true, data: result };
-  } catch (error: any) {
-    console.error('timer:start error:', error);
-    return { success: false, error: error.message };
-  }
-});
-
-ipcMain.handle('timer:stop', async (event, data) => {
-  try {
-    const { entryId, notes } = data;
-    const syncService = getSyncService();
-    const result = await syncService.syncTimerStop(entryId, notes || '');
-    return { success: true, data: result };
-  } catch (error: any) {
-    console.error('timer:stop error:', error);
-    return { success: false, error: error.message };
-  }
-});
-
-ipcMain.handle('timer:pause', async (event, data) => {
-  try {
-    const { entryId, notes } = data;
-    const syncService = getSyncService();
-    // Pause is same as stop for our purposes
-    const result = await syncService.syncTimerStop(entryId, notes || '');
-    return { success: true, data: result };
-  } catch (error: any) {
-    console.error('timer:pause error:', error);
-    return { success: false, error: error.message };
-  }
-});
-
-ipcMain.handle('timer:complete', async (event, data) => {
-  try {
-    const { taskId, entryId, notes } = data;
-    const syncService = getSyncService();
-    
-    // First stop the timer if there's an active entry
-    if (entryId) {
-      await syncService.syncTimerStop(entryId, notes || '');
-    }
-    
-    // Then mark task as complete by updating in sync queue
-    const db = getDatabase();
-    const taskId_num = typeof taskId === 'string' ? parseInt(taskId) : taskId;
-    
-    // Add task completion to sync queue
-    db.addToSyncQueue('task', taskId_num, 'complete', { status: 'completed' });
-    
-    // Also process the sync queue to try sending
-    await syncService.processSyncQueue();
-    
-    return { success: true, message: 'Task marked as complete' };
-  } catch (error: any) {
-    console.error('timer:complete error:', error);
-    return { success: false, error: error.message };
-  }
-});
-
-ipcMain.handle('timer:getActive', async (event) => {
-  try {
-    const syncService = getSyncService();
-    // Try to get from API first, fallback to local DB
-    try {
-      const result = await syncService.getActiveTimeEntry?.();
-      if (result) return { success: true, data: result };
-    } catch (e) {
-      console.warn('Could not fetch active timer from API:', e);
-    }
-    
-    // Fallback to local database
-    const db = getDatabase();
-    const entries = db.getTimeEntries?.() || [];
-    const activeEntry = entries.find((e: any) => !e.end_time);
-    
-    return { success: true, data: activeEntry || null };
-  } catch (error: any) {
-    console.error('timer:getActive error:', error);
-    return { success: false, error: error.message };
-  }
 });
 
 app.on('ready', () => {

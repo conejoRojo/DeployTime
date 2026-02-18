@@ -14,22 +14,6 @@ contextBridge.exposeInMainWorld('electronAPI', {
   toggleWindow: () => ipcRenderer.send('toggle-window'),
   quitApp: () => ipcRenderer.send('quit-app'),
 
-  // Timer operations (sincronizadas offline)
-  startTimer: (taskId: number, notes?: string): Promise<any> => 
-    ipcRenderer.invoke('timer:start', { taskId, notes }),
-  
-  stopTimer: (entryId: number, notes?: string): Promise<any> => 
-    ipcRenderer.invoke('timer:stop', { entryId, notes }),
-  
-  pauseTimer: (entryId: number, notes?: string): Promise<any> => 
-    ipcRenderer.invoke('timer:pause', { entryId, notes }),
-  
-  completeTask: (taskId: number, entryId?: number, notes?: string): Promise<any> => 
-    ipcRenderer.invoke('timer:complete', { taskId, entryId, notes }),
-
-  getActiveTimeEntry: (): Promise<any> => 
-    ipcRenderer.invoke('timer:getActive'),
-
   onMessage: (channel: string, callback: (data: any) => void) => {
     const validChannels = ['timer-update', 'sync-complete', 'inactivity-warning', 'app-closing', 'timer-synced'];
     if (validChannels.includes(channel)) {
@@ -56,11 +40,6 @@ declare global {
       hideWindow: () => void;
       toggleWindow: () => void;
       quitApp: () => void;
-      startTimer: (taskId: number, notes?: string) => Promise<any>;
-      stopTimer: (entryId: number, notes?: string) => Promise<any>;
-      pauseTimer: (entryId: number, notes?: string) => Promise<any>;
-      completeTask: (taskId: number, entryId?: number, notes?: string) => Promise<any>;
-      getActiveTimeEntry: () => Promise<any>;
       platform: string;
       version: string;
     };
