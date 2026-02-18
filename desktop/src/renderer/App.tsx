@@ -5,8 +5,9 @@ import './App.css';
 const SYNC_INTERVAL_MS = 600_000; // define el intervalo de sincronización en milisegundos (600.000 ms = 10 minutos)
 
 const formatSecondsToTime = (totalSeconds: number): string => { // Declara una función auxiliar para formatear segundos a hh:mm:ss
-  const seconds = totalSeconds % 60; // Calcula los segundos residuales
-  const totalMinutes = Math.floor(totalSeconds / 60); // Convierte el total de segundos a minutos
+  const total = Math.max(0, Math.floor(totalSeconds)); // asegurar entero no negativo
+  const seconds = total % 60; // Calcula los segundos residuales
+  const totalMinutes = Math.floor(total / 60); // Convierte el total de segundos a minutos
   const minutes = totalMinutes % 60; // Calcula los minutos residuales
   const hours = Math.floor(totalMinutes / 60); // Calcula las horas completas
 
