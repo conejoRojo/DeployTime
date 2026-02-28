@@ -13,6 +13,11 @@ jobs:
         with:
           php-version: '8.3'
           
+      - name: Ensure bootstrap/cache is present and writable
+        run: |
+          mkdir -p backend/bootstrap/cache
+          chmod -R 777 backend/bootstrap/cache
+          
       - name: Install Dependencies
         run: |
           cd backend
