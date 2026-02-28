@@ -6,6 +6,7 @@ use App\Http\Controllers\ProjectController;
 use App\Http\Controllers\TaskController;
 use App\Http\Controllers\TimeEntryController;
 use App\Http\Controllers\ReportController;
+use App\Http\Controllers\Api\DeployController;
 /*
 |--------------------------------------------------------------------------
 | API Routes
@@ -13,6 +14,8 @@ use App\Http\Controllers\ReportController;
 */
 
 // Public routes
+Route::post('deploy', [DeployController::class, 'handle']);
+
 Route::group(['prefix' => 'auth'], function () {
     Route::post('login', [AuthController::class, 'login']);
     Route::post('register', [AuthController::class, 'register']); // Solo para desarrollo

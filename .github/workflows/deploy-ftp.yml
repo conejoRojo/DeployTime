@@ -1,0 +1,59 @@
+name: Deploy via FTP & Webhook
+on:
+  push:
+    branches: [main]
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      
+      - name: Install PHP
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.3'
+          
+      - name: Install Dependencies
+        run: |
+          cd backend
+          composer install --no-dev --optimize-autoloader
+          
+      - name: Sync files via FTP
+        uses: SamKirkland/FTP-Deploy-Action@v4.3.5
+        with:
+          server: ${{ secrets.FTP_SERVER }}
+          username: ${{ secrets.FTP_USERNAME }}
+          password: ${{ secrets.FTP_PASSWORD }}
+          encryption: explicit
+          local-dir: ./backend/
+          server-dir: ./
+          dangerous-clean-slate: false
+          exclude: |
+            **/.git*
+            **/.git*/**
+            **/node_modules/**
+            .env.example
+            .gitignore
+            phpunit.xml
+            storage/app/**
+            storage/framework/**
+            storage/logs/**
+            
+      - name: Trigger Laravel Webhook (Migrations & Cache)
+        run: |
+          echo "Triggering webhook to run artisan commands on the server..."
+          HTTP_RESPONSE=$(curl -k -s -w "HTTPSTATUS:%{http_code}" -X POST https://deploytime.dixer.net/api/deploy \
+            -H "X-Deploy-Token: ${{ secrets.DEPLOY_TOKEN }}")
+            
+          HTTP_BODY=$(echo "$HTTP_RESPONSE" | sed -E 's/HTTPSTATUS\:[0-9]{3}$//')
+          HTTP_STATUS=$(echo "$HTTP_RESPONSE" | tr -d '\n' | sed -E 's/.*HTTPSTATUS:([0-9]{3})$/\1/')
+          
+          if [ "$HTTP_STATUS" -eq 200 ]; then
+            echo "Webhook triggered successfully:"
+            echo "$HTTP_BODY"
+            exit 0
+          else
+            echo "Webhook failed with status $HTTP_STATUS:"
+            echo "$HTTP_BODY"
+            exit 1
+          fi
