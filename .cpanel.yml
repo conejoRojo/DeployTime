@@ -1,7 +1,7 @@
 ---
 deployment:
   tasks:
-    - export DEPLOYPATH=/home/dixer/deploytime_core/
+    - export DEPLOYPATH=/home4/dixer/deploytime_core/
     - /bin/cp -R backend/* $DEPLOYPATH
     - cd $DEPLOYPATH
     - composer install --no-dev --optimize-autoloader
