@@ -1,0 +1,14 @@
+---
+deployment:
+  tasks:
+    - export DEPLOYPATH=/home/dixer/deploytime_core/
+    - /bin/cp -R backend/* $DEPLOYPATH
+    - cd $DEPLOYPATH
+    - composer install --no-dev --optimize-autoloader
+    - mkdir -p bootstrap/cache
+    - chmod -R 775 bootstrap/cache
+    - php artisan optimize:clear
+    - php artisan migrate --force
+    - php artisan config:cache
+    - php artisan route:cache
+    - php artisan view:cache
