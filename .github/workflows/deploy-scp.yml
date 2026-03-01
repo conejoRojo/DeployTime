@@ -1,4 +1,4 @@
-name: Deploy via FTP & Webhook
+name: Deploy via SCP (Port 9022) & Webhook
 on:
   push:
     branches: [main]
@@ -23,29 +23,17 @@ jobs:
           cd backend
           composer install --no-dev --optimize-autoloader
           
-      - name: Sync files via FTP
-        uses: SamKirkland/FTP-Deploy-Action@v4.3.5
+      - name: Sync files via SCP
+        uses: appleboy/scp-action@master
         with:
-          server: ${{ secrets.FTP_SERVER }}
-          username: ${{ secrets.FTP_USERNAME }}
-          password: ${{ secrets.FTP_PASSWORD }}
-          protocol: ftps
-          security: strict
-          port: 21
-          timeout: 60000
-          local-dir: ./backend/
-          server-dir: ./
-          dangerous-clean-slate: false
-          exclude: |
-            **/.git*
-            **/.git*/**
-            **/node_modules/**
-            .env.example
-            .gitignore
-            phpunit.xml
-            storage/app/**
-            storage/framework/**
-            storage/logs/**
+          host: ${{ secrets.SSH_HOST }}
+          username: ${{ secrets.SSH_USERNAME }}
+          key: ${{ secrets.SSH_PRIVATE_KEY }}
+          port: 9022
+          source: "backend/*"
+          target: "/home/${{ secrets.SSH_USERNAME }}/deploytime_core"
+          strip_components: 1
+          rm: false
             
       - name: Trigger Laravel Webhook (Migrations & Cache)
         run: |
