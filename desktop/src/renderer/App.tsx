@@ -5,8 +5,9 @@ import './App.css';
 const SYNC_INTERVAL_MS = 600_000; // define el intervalo de sincronización en milisegundos (600.000 ms = 10 minutos)
 
 const formatSecondsToTime = (totalSeconds: number): string => { // Declara una función auxiliar para formatear segundos a hh:mm:ss
-  const seconds = totalSeconds % 60; // Calcula los segundos residuales
-  const totalMinutes = Math.floor(totalSeconds / 60); // Convierte el total de segundos a minutos
+  const total = Math.max(0, Math.floor(totalSeconds)); // asegurar entero no negativo
+  const seconds = total % 60; // Calcula los segundos residuales
+  const totalMinutes = Math.floor(total / 60); // Convierte el total de segundos a minutos
   const minutes = totalMinutes % 60; // Calcula los minutos residuales
   const hours = Math.floor(totalMinutes / 60); // Calcula las horas completas
 
@@ -140,9 +141,33 @@ function App() {
       });
     }, SYNC_INTERVAL_MS);                                        // fija el intervalo en la constante SYNC_INTERVAL_MS (10 minutos)
 
+    // RENOVACIÓN SILENCIOSA DE TOKEN (45 minutos)
+    const REFRESH_INTERVAL_MS = 45 * 60 * 1000;
+    const refreshIntervalId = window.setInterval(async () => {
+      if (cancelled) return;
+      try {
+        await api.refreshToken();
+        console.log('Token renovado silenciosamente en background');
+      } catch (err) {
+        console.error('Error al renovar token, forzando cierre de sesión:', err);
+        api.clearToken();
+        setIsLoggedIn(false);
+        setUser(null);
+        setActiveTimer(null);
+        setTasks([]);
+        setProjects([]);
+        setSelectedProject(null);
+        setSelectedTask(null);
+        setElapsedTime('00:00:00');
+        setAccumulatedTime(0);
+        setError('La sesión ha expirado por inactividad o problemas de red. Por favor, inicia sesión nuevamente.');
+      }
+    }, REFRESH_INTERVAL_MS);
+
     return () => {                                               // función de limpieza del efecto
       cancelled = true;                                          // marca la bandera como cancelada
-      window.clearInterval(intervalId);                          // limpia el intervalo para evitar fugas de recursos
+      window.clearInterval(intervalId);                          // limpia el intervalo original de sync
+      window.clearInterval(refreshIntervalId);                   // limpia el intervalo de refresh
     };
   }, [isLoggedIn]);                                              // ejecuta este efecto sólo cuando cambia isLoggedIn (login / logout)
 

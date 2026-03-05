@@ -20,5 +20,12 @@ export default defineConfig({
     host: '127.0.0.1',
     port: 3001,
     strictPort: true,
+    proxy: {
+      '/api': {
+        target: 'https://deploytime.dixer.net',
+        changeOrigin: true,
+        secure: true,
+      },
+    },
   },
 });

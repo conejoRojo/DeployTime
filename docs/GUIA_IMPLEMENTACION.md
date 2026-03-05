@@ -1,11 +1,11 @@
-# GUIA DE IMPLEMENTACION - PASO A PASO
+﻿# GUIA DE IMPLEMENTACION - PASO A PASO
 
 ## RESUMEN EJECUTIVO
 
 Pipeline de seguridad con 3 problemas identificados:
-- ❌ Semgrep: No genera archivo SARIF
-- ❌ detect-secrets: 19 secretos detectados
-- ✅ Trivy: Funcionando correctamente
+- âŒ Semgrep: No genera archivo SARIF
+- âŒ detect-secrets: 19 secretos detectados
+- âœ… Trivy: Funcionando correctamente
 
 Tiempo estimado de resolucion: 30-45 minutos
 
@@ -25,7 +25,7 @@ Tiempo estimado de resolucion: 30-45 minutos
 ### Paso 1.2: Agregar token a GitHub
 
 - [ ] Ir a tu repositorio: https://github.com/conejoRojo/DeployTime
-- [ ] Click en "Settings" (ultima pestaña)
+- [ ] Click en "Settings" (ultima pestaÃ±a)
 - [ ] En el menu lateral izquierdo: "Secrets and variables"
 - [ ] Click en "Actions" (el primero, NO Codespaces ni Dependabot)
 - [ ] Click en el boton verde "New repository secret"
@@ -164,10 +164,10 @@ Para cada secreto REAL identificado:
 
 **A. Secreto en codigo:**
 ```php
-// ❌ ANTES
+// âŒ ANTES
 define('JWT_SECRET', 'mi-clave-secreta-123');
 
-// ✅ DESPUES
+// âœ… DESPUES
 define('JWT_SECRET', env('JWT_SECRET'));
 ```
 
@@ -220,28 +220,28 @@ git push origin main
 ### Paso 4.2: Verificar resultados esperados
 
 **Job semgrep-sast:**
-- [ ] ✅ Checkout codigo - Success
-- [ ] ✅ Ejecutar Semgrep SAST - Success (o con warnings menores)
-- [ ] ✅ Subir resultados SARIF - Success
-- [ ] ✅ NO error "Path does not exist: semgrep.sarif"
-- [ ] ✅ NO error "Resource not accessible by integration"
+- [ ] âœ… Checkout codigo - Success
+- [ ] âœ… Ejecutar Semgrep SAST - Success (o con warnings menores)
+- [ ] âœ… Subir resultados SARIF - Success
+- [ ] âœ… NO error "Path does not exist: semgrep.sarif"
+- [ ] âœ… NO error "Resource not accessible by integration"
 
 **Job trivy-sca:**
-- [ ] ✅ Todas los steps - Success o continue-on-error
+- [ ] âœ… Todas los steps - Success o continue-on-error
 
 **Job detect-secrets:**
-- [ ] ✅ Instalar dependencias - Success (pip + jq)
-- [ ] ✅ Escanear secretos - Success
-- [ ] ✅ Verificar resultados - Success (0 secretos nuevos)
-- [ ] ✅ NO error "Se encontraron X secretos potenciales"
+- [ ] âœ… Instalar dependencias - Success (pip + jq)
+- [ ] âœ… Escanear secretos - Success
+- [ ] âœ… Verificar resultados - Success (0 secretos nuevos)
+- [ ] âœ… NO error "Se encontraron X secretos potenciales"
 
 **Job security-summary:**
-- [ ] ✅ Generar resumen - Success
-- [ ] ✅ Tabla muestra:
+- [ ] âœ… Generar resumen - Success
+- [ ] âœ… Tabla muestra:
   ```
-  | ✓ Semgrep   | success | ... |
-  | ✓ Trivy     | success | ... |
-  | ✓ Secrets   | success | ... |
+  | âœ“ Semgrep   | success | ... |
+  | âœ“ Trivy     | success | ... |
+  | âœ“ Secrets   | success | ... |
   ```
 
 ### Paso 4.3: Verificar GitHub Security tab
@@ -411,12 +411,9 @@ Post-implementacion:
 ## SOPORTE
 
 Documentos de referencia entregados:
-1. security-scan.yml - Workflow corregido
-2. CORRECCIONES_PIPELINE.md - Explicacion tecnica de fixes
-3. GUIA_SECRETOS.md - Como gestionar secretos
-4. EXPLICACION_COMPLETA_PIPELINE.md - Documentacion completa
-5. DIAGRAMAS_VISUALES.md - Diagramas de arquitectura
-6. CHECKLIST_VALIDACION.md - Checklist detallado
-7. revisar_secretos.sh - Script de analisis
-
+1. `.github/workflows/security-scan.yml` - Workflow de seguridad
+2. `docs/GUIA_SECRETOS.md` - Gestión de secretos
+3. `docs/PIPELINE.md` - Flujo de CI/CD
+4. `docs/SECURITY.md` - Lineamientos de seguridad
+5. `revisar_secretos.sh` - Script de análisis
 Si algo falla, revisar logs especificos del step que falla en GitHub Actions.

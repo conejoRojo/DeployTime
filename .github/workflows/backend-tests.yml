@@ -41,7 +41,7 @@ jobs:
       - name: Setup PHP 8.2
         uses: shivammathur/setup-php@v2
         with:
-          php-version: '8.2'
+          php-version: '8.3'
           extensions: mbstring, xml, ctype, json, mysql, bcmath
           coverage: xdebug
       
@@ -49,12 +49,17 @@ jobs:
         run: |
           cd backend
           cp .env.example .env
-          php artisan key:generate
+          
+      - name: Ensure bootstrap/cache is present and writable
+        run: |
+          mkdir -p backend/bootstrap/cache
+          chmod -R 775 backend/bootstrap/cache
       
-      - name: Instalar dependencias Composer
+      - name: Instalar dependencias Composer y Generar Key
         run: |
           cd backend
           composer install --no-interaction --prefer-dist --optimize-autoloader
+          php artisan key:generate
       
       - name: Configurar base de datos
         run: |
