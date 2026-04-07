@@ -38,7 +38,7 @@ jobs:
       - name: Checkout código
         uses: actions/checkout@v4
       
-      - name: Setup PHP 8.2
+      - name: Setup PHP 8.3
         uses: shivammathur/setup-php@v2
         with:
           php-version: '8.3'
@@ -49,12 +49,13 @@ jobs:
         run: |
           cd backend
           cp .env.example .env
+          mkdir -p bootstrap/cache storage/framework/cache/data storage/framework/sessions storage/framework/views storage/logs
+          chmod -R 777 bootstrap/cache storage
 
       - name: Instalar dependencias Composer
         run: |
           cd backend
           composer install --no-interaction --prefer-dist --optimize-autoloader
-          php artisan key:generate
       
       - name: Generar App Key
         run: |
