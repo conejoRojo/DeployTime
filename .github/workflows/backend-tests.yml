@@ -62,6 +62,11 @@ jobs:
           cd backend
           php artisan key:generate
       
+      - name: Generar JWT Secret
+        run: |
+          cd backend
+          php artisan jwt:secret --force --no-interaction
+      
       - name: Configurar base de datos
         run: |
           cd backend
