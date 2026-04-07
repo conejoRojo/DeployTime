@@ -21,7 +21,7 @@ class DeployController extends Controller
         }
 
         if (!hash_equals($expectedToken, (string) $providedToken)) {
-            Log::warning('Intento de despliegue no autorizado repeliendo IP: ' . $request->ip());
+            Log::warning('Intento de despliegue no autorizado repeliendo IP: '.$request->ip());
             return response()->json(['error' => 'Unauthorized. Invalid Token.'], 401);
         }
 
@@ -47,15 +47,16 @@ class DeployController extends Controller
             return response()->json([
                 'status' => 'success',
                 'message' => 'Deployment executed successfully.',
-                'details' => $output
+                'details' => $output,
             ]);
 
         } catch (\Exception $e) {
-            Log::error('Error crítico durante el despliegue: ' . $e->getMessage());
+            Log::error('Error crítico durante el despliegue: '.$e->getMessage());
+
             return response()->json([
                 'status' => 'error',
                 'message' => 'Deployment failed.',
-                'error' => $e->getMessage()
+                'error' => $e->getMessage(),
             ], 500);
         }
     }
