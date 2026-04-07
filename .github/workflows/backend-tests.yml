@@ -45,16 +45,20 @@ jobs:
           extensions: mbstring, xml, ctype, json, mysql, bcmath
           coverage: xdebug
       
-      - name: Copiar .env.example a .env
+      - name: Configurar entorno Laravel
         run: |
           cd backend
           cp .env.example .env
-          php artisan key:generate
-      
+
       - name: Instalar dependencias Composer
         run: |
           cd backend
           composer install --no-interaction --prefer-dist --optimize-autoloader
+      
+      - name: Generar App Key
+        run: |
+          cd backend
+          php artisan key:generate
       
       - name: Configurar base de datos
         run: |
