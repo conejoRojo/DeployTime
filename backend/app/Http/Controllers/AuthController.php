@@ -10,7 +10,6 @@ use Illuminate\Support\Facades\Validator;
 
 class AuthController extends Controller
 {
-
     /**
      * Create a new AuthController instance.
      */
@@ -118,8 +117,8 @@ class AuthController extends Controller
         if ($request->filled('search')) {                      // filtro opcional por texto
             $search = $request->input('search');               // leemos término de búsqueda
             $query->where(function ($q) use ($search) {        // agrupamos condiciones
-                $q->where('name', 'like', '%' . $search . '%') // nombre contiene texto
-                    ->orWhere('email', 'like', '%' . $search . '%'); // o email contiene texto
+                $q->where('name', 'like', '%'.$search.'%') // nombre contiene texto
+                    ->orWhere('email', 'like', '%'.$search.'%'); // o email contiene texto
             });
         }
 
@@ -268,7 +267,6 @@ class AuthController extends Controller
             'message' => 'Usuario eliminado correctamente.',
         ]);
     }
-
 
     /**
      * Get the token array structure.
