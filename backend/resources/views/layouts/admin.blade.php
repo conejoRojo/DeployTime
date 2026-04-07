@@ -17,7 +17,7 @@
         <aside class="w-64 bg-slate-800 text-white flex-shrink-0">
             <div class="p-6">
                 <h1 class="text-2xl font-bold tracking-wider">DeployTime</h1>
-                <p class="text-xs text-slate-400 mt-1">Admin Console</p>
+                <p class="text-xs text-slate-400 mt-1">Admin Console v1.1</p>
             </div>
             <nav class="mt-6">
                 <a href="{{ route('admin.dashboard') }}" class="block px-6 py-3 hover:bg-slate-700 {{ request()->routeIs('admin.dashboard') ? 'bg-slate-700' : '' }}">

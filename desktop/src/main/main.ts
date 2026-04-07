@@ -112,6 +112,25 @@ app.on('window-all-closed', () => {
   // No hacemos nada, la app sigue corriendo en el tray
 });
 
+let isQuitting = false;
+
+app.on('before-quit', (event) => {
+  if (!isQuitting) {
+    event.preventDefault();
+    isQuitting = true;
+
+    if (mainWindow && !mainWindow.isDestroyed()) {
+      mainWindow.webContents.send('app-closing');
+      // Esperar 2 segundos para permitir que la API guarde el estado del timer
+      setTimeout(() => {
+        app.quit();
+      }, 2000);
+    } else {
+      app.quit();
+    }
+  }
+});
+
 // IPC Handlers
 
 ipcMain.on('toggle-window', () => {
@@ -131,6 +150,12 @@ ipcMain.on('quit-app', () => {
 app.on('ready', () => {
   createTray();
   createWindow();
+
+  // Habilitar Auto-Inicio en Windows
+  app.setLoginItemSettings({
+    openAtLogin: true,
+    path: app.getPath('exe'),
+  });
 });
 
 app.on('activate', () => {

@@ -41,7 +41,7 @@ jobs:
       - name: Setup PHP 8.2
         uses: shivammathur/setup-php@v2
         with:
-          php-version: '8.2'
+          php-version: '8.3'
           extensions: mbstring, xml, ctype, json, mysql, bcmath
           coverage: xdebug
       
@@ -54,6 +54,7 @@ jobs:
         run: |
           cd backend
           composer install --no-interaction --prefer-dist --optimize-autoloader
+          php artisan key:generate
       
       - name: Generar App Key
         run: |

@@ -41,9 +41,9 @@ class TimeEntry extends Model
     public function durationInSeconds()
     {
         if (!$this->end_time) {
-            return now()->diffInSeconds($this->start_time);
+            return abs(now()->diffInSeconds($this->start_time));
         }
-        return $this->end_time->diffInSeconds($this->start_time);
+        return abs($this->end_time->diffInSeconds($this->start_time));
     }
 
     public function durationInHours()
@@ -53,9 +53,9 @@ class TimeEntry extends Model
 
     public function durationFormatted()
     {
-        $seconds = $this->durationInSeconds();
+        $seconds = abs($this->durationInSeconds());
         $hours = floor($seconds / 3600);
-        $minutes = floor(($seconds % 3600) / 60);
+        $minutes = floor(($seconds / 60) % 60);
         $secs = $seconds % 60;
 
         return sprintf('%02d:%02d:%02d', $hours, $minutes, $secs);

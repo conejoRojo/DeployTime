@@ -101,8 +101,15 @@
                         @forelse($project->tasks as $task)
                             <tr>
                                 <td class="px-5 py-4 border-b border-gray-200 bg-white text-sm">
-                                    <p class="text-gray-900 font-medium">{{ $task->name }}</p>
-                                    <p class="text-gray-500 text-xs">{{ $task->description }}</p>
+                                    <div class="flex items-start">
+                                        <button onclick="toggleDetails({{ $task->id }})" class="mr-2 text-gray-400 hover:text-blue-600 focus:outline-none" title="Ver Historial de Tiempos">
+                                            <svg id="icon-task-{{ $task->id }}" class="w-5 h-5 transition-transform duration-200" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path></svg>
+                                        </button>
+                                        <div>
+                                            <p class="text-gray-900 font-medium">{{ $task->name }}</p>
+                                            <p class="text-gray-500 text-xs">{{ $task->description }}</p>
+                                        </div>
+                                    </div>
                                 </td>
                                 <td class="px-5 py-4 border-b border-gray-200 bg-white text-sm">
                                     @if($task->assignedUsers->isNotEmpty())
@@ -151,6 +158,45 @@
                                     </div>
                                 </td>
                             </tr>
+                            <!-- Sub Row for Time Entries -->
+                            <tr id="details-task-{{ $task->id }}" class="hidden bg-slate-50 border-b border-gray-200">
+                                <td colspan="4" class="px-10 py-4">
+                                    <div class="rounded border border-gray-200 bg-white overflow-hidden">
+                                        <table class="min-w-full text-xs">
+                                            <thead class="bg-gray-100 text-gray-600">
+                                                <tr>
+                                                    <th class="px-4 py-2 text-left font-semibold">Fecha</th>
+                                                    <th class="px-4 py-2 text-left font-semibold">Usuario</th>
+                                                    <th class="px-4 py-2 text-left font-semibold">Inicio</th>
+                                                    <th class="px-4 py-2 text-left font-semibold">Fin</th>
+                                                    <th class="px-4 py-2 text-right font-semibold">Duración</th>
+                                                </tr>
+                                            </thead>
+                                            <tbody>
+                                                @forelse($task->timeEntries->sortByDesc('start_time') as $entry)
+                                                    <tr class="border-t border-gray-100">
+                                                        <td class="px-4 py-2">{{ $entry->start_time->format('d M Y') }}</td>
+                                                        <td class="px-4 py-2 text-gray-500">{{ $entry->user->name ?? 'Sistema' }}</td>
+                                                        <td class="px-4 py-2">{{ $entry->start_time->format('H:i:s') }}</td>
+                                                        <td class="px-4 py-2">
+                                                            @if($entry->end_time)
+                                                                {{ $entry->end_time->format('H:i:s') }}
+                                                            @else
+                                                                <span class="text-green-600 font-semibold animate-pulse">En curso...</span>
+                                                            @endif
+                                                        </td>
+                                                        <td class="px-4 py-2 text-right font-mono">{{ $entry->durationFormatted() }}</td>
+                                                    </tr>
+                                                @empty
+                                                    <tr>
+                                                        <td colspan="5" class="px-4 py-3 text-center text-gray-500 italic">No hay registros de tiempo para esta tarea.</td>
+                                                    </tr>
+                                                @endforelse
+                                            </tbody>
+                                        </table>
+                                    </div>
+                                </td>
+                            </tr>
                         @empty
                             <tr>
                                 <td colspan="4"
@@ -188,4 +234,18 @@
         </div>
 
     </div>
+
+    <script>
+        function toggleDetails(taskId) {
+            const row = document.getElementById('details-task-' + taskId);
+            const icon = document.getElementById('icon-task-' + taskId);
+            if (row.classList.contains('hidden')) {
+                row.classList.remove('hidden');
+                icon.classList.add('rotate-90');
+            } else {
+                row.classList.add('hidden');
+                icon.classList.remove('rotate-90');
+            }
+        }
+    </script>
 @endsection
