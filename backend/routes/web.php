@@ -1,10 +1,10 @@
 <?php
 
-use Illuminate\Support\Facades\Route;
-use App\Http\Controllers\Web\Auth\LoginController;
 use App\Http\Controllers\Web\Admin\DashboardController;
-use App\Http\Controllers\Web\Admin\UserController;
 use App\Http\Controllers\Web\Admin\ProjectController;
+use App\Http\Controllers\Web\Admin\UserController;
+use App\Http\Controllers\Web\Auth\LoginController;
+use Illuminate\Support\Facades\Route;
 
 // Redirect root to login
 Route::get('/', function () {
